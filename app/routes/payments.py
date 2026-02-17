@@ -4,7 +4,7 @@ from pathlib import Path
 
 from app.deps import db_dep, require_role
 from app.data.payments import create_payment, list_payments, list_payments_by_student, totals_by_student
-from app.data.students import get_student, update_student
+from app.data.students import get_student, set_student_financial
 from app.storage import save_upload
 from app.templating import templates
 
@@ -82,15 +82,15 @@ async def payment_new_post(
         if ext not in allowed_exts:
             raise HTTPException(status_code=400, detail="Type de fichier non autorisé")
 
-         allowed_ct = {
-             "application/pdf",
-             "application/msword",
-             "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-             "image/png",
-             "image/jpeg",
-         }
-         if receipt.content_type and receipt.content_type not in allowed_ct:
-             raise HTTPException(status_code=400, detail="Type de fichier non autorisé")
+        allowed_ct = {
+            "application/pdf",
+            "application/msword",
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            "image/png",
+            "image/jpeg",
+        }
+        if receipt.content_type and receipt.content_type not in allowed_ct:
+            raise HTTPException(status_code=400, detail="Type de fichier non autorisé")
 
         receipt_original, stored, size = await save_upload(receipt)
         if size > 10 * 1024 * 1024:
@@ -113,26 +113,12 @@ async def payment_new_post(
         created_by_user_id=created_by,
     )
 
-    # update student's total amount if provided
+    # update student's total amount/currency if provided
     try:
         total_amount_int = int(total_amount)
     except Exception:
         total_amount_int = 0
     if total_amount_int is not None and total_amount_int >= 0:
-        await update_student(
-            db,
-            student_id=student_id,
-            full_name=student["full_name"],
-            phone=student["phone"],
-            email=student["email"],
-            country=student["country"],
-            study_level=student["study_level"],
-            program_choice=student["program_choice"],
-            university=student["university"],
-            status_id=student.get("status_id"),
-            agent_name=student["agent_name"],
-            notes=student.get("notes") or "",
-            changed_by_user_id=created_by,
-        )
+        await set_student_financial(db, student_id=student_id, total_amount=total_amount_int, currency=currency)
 
     return RedirectResponse(url=f"/payments/student/{student_id}", status_code=303)

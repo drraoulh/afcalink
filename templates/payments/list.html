@@ -1,6 +1,46 @@
 {% extends "base.html" %}
 
 {% block content %}
-<h1 class="h4">Paiements</h1>
-<p class="text-muted mb-0">Placeholder</p>
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h1 class="h4 mb-0">Paiements</h1>
+</div>
+
+<div class="card">
+  <div class="table-responsive">
+    <table class="table table-striped table-hover mb-0 align-middle">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Étudiant</th>
+          <th>Type</th>
+          <th>Montant</th>
+          <th>Devise</th>
+          <th>Mode</th>
+          <th>Statut</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in payments %}
+        <tr>
+          <td>{{ p.payment_date }}</td>
+          <td>{{ p.student_name }}</td>
+          <td>{{ p.payment_type }}</td>
+          <td>{{ p.amount }}</td>
+          <td>{{ p.currency }}</td>
+          <td>{{ p.payment_mode }}</td>
+          <td>{{ p.payment_status }}</td>
+          <td class="text-end">
+            <a class="btn btn-outline-secondary btn-sm" href="/payments/student/{{ p.student_id }}">Voir</a>
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="8" class="text-center text-muted py-4">Aucun paiement</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
 {% endblock %}

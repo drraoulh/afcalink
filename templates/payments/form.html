@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h1 class="h4 mb-0">Ajouter paiement - {{ student.full_name }}</h1>
+  <a class="btn btn-outline-secondary btn-sm" href="/payments/student/{{ student.id }}">Retour</a>
+</div>
+
+<div class="card">
+  <div class="card-body">
+    <form method="post" action="/payments/student/{{ student.id }}/new" enctype="multipart/form-data">
+      <div class="row g-3">
+        <div class="col-12 col-md-4">
+          <label class="form-label">Type de paiement</label>
+          <input class="form-control" name="payment_type" required placeholder="Frais de dossier" />
+        </div>
+        <div class="col-12 col-md-4">
+          <label class="form-label">Montant</label>
+          <input class="form-control" type="number" name="amount" required min="0" />
+        </div>
+        <div class="col-12 col-md-4">
+          <label class="form-label">Devise</label>
+          <input class="form-control" name="currency" value="{{ student.currency or 'FCFA' }}" required />
+        </div>
+
+        <div class="col-12 col-md-4">
+          <label class="form-label">Mode de paiement</label>
+          <select class="form-select" name="payment_mode" required>
+            <option value="cash">Cash</option>
+            <option value="mobile_money">Mobile Money</option>
+            <option value="bank">Banque</option>
+          </select>
+        </div>
+        <div class="col-12 col-md-4">
+          <label class="form-label">Date</label>
+          <input class="form-control" type="date" name="payment_date" required />
+        </div>
+        <div class="col-12 col-md-4">
+          <label class="form-label">Statut</label>
+          <select class="form-select" name="payment_status" required>
+            <option value="received">Reçu</option>
+            <option value="pending">En attente</option>
+            <option value="cancelled">Annulé</option>
+          </select>
+        </div>
+
+        <div class="col-12 col-md-6">
+          <label class="form-label">Montant total attendu (optionnel)</label>
+          <input class="form-control" type="number" name="total_amount" min="0" value="{{ student.total_amount or 0 }}" />
+          <div class="form-text">Met à jour le montant total attendu sur la fiche étudiant</div>
+        </div>
+
+        <div class="col-12 col-md-6">
+          <label class="form-label">Reçu (optionnel)</label>
+          <input class="form-control" type="file" name="receipt" accept=".pdf,.doc,.docx,.png,.jpg,.jpeg,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,image/png,image/jpeg" />
+          <div class="form-text">PDF / Word / Images. Max 10 Mo</div>
+        </div>
+      </div>
+
+      <div class="mt-4 d-flex gap-2">
+        <button class="btn btn-dark" type="submit">Enregistrer</button>
+        <a class="btn btn-outline-secondary" href="/payments/student/{{ student.id }}">Annuler</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
