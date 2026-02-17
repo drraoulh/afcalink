@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h1 class="h4 mb-0">{% if student %}Modifier étudiant{% else %}Ajouter étudiant{% endif %}</h1>
+  <a class="btn btn-outline-secondary btn-sm" href="/students">Retour</a>
+</div>
+
+<div class="card">
+  <div class="card-body">
+    <form method="post" action="{% if student %}/students/{{ student.id }}/edit{% else %}/students/new{% endif %}">
+      <div class="row g-3">
+        <div class="col-12 col-md-6">
+          <label class="form-label">Nom complet</label>
+          <input class="form-control" name="full_name" required value="{{ student.full_name if student else '' }}" />
+        </div>
+        <div class="col-12 col-md-6">
+          <label class="form-label">Téléphone</label>
+          <input class="form-control" name="phone" required value="{{ student.phone if student else '' }}" />
+        </div>
+        <div class="col-12 col-md-6">
+          <label class="form-label">Email</label>
+          <input class="form-control" type="email" name="email" required value="{{ student.email if student else '' }}" />
+        </div>
+        <div class="col-12 col-md-6">
+          <label class="form-label">Pays</label>
+          <input class="form-control" name="country" required value="{{ student.country if student else '' }}" />
+        </div>
+        <div class="col-12 col-md-6">
+          <label class="form-label">Niveau d’étude</label>
+          <input class="form-control" name="study_level" required value="{{ student.study_level if student else '' }}" />
+        </div>
+        <div class="col-12 col-md-6">
+          <label class="form-label">Programme choisi</label>
+          <input class="form-control" name="program_choice" required value="{{ student.program_choice if student else '' }}" />
+        </div>
+        <div class="col-12 col-md-6">
+          <label class="form-label">Université</label>
+          <input class="form-control" name="university" required value="{{ student.university if student else '' }}" />
+        </div>
+        <div class="col-12 col-md-6">
+          <label class="form-label">Agent responsable</label>
+          <input class="form-control" name="agent_name" required value="{{ student.agent_name if student else '' }}" />
+        </div>
+        <div class="col-12 col-md-6">
+          <label class="form-label">Statut dossier</label>
+          <select class="form-select" name="status_id">
+            <option value="">-</option>
+            {% for st in statuses %}
+            <option value="{{ st.id }}" {% if student and student.status_id == st.id %}selected{% endif %}>{{ st.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-12">
+          <label class="form-label">Notes internes</label>
+          <textarea class="form-control" name="notes" rows="4">{{ student.notes if student else '' }}</textarea>
+        </div>
+      </div>
+
+      <div class="mt-4 d-flex gap-2">
+        <button class="btn btn-dark" type="submit">Enregistrer</button>
+        <a class="btn btn-outline-secondary" href="/students">Annuler</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h1 class="h4 mb-0">Dashboard</h1>
+</div>
+
+<div class="row g-3">
+  <div class="col-12 col-md-4">
+    <div class="card">
+      <div class="card-body">
+        <div class="text-muted">Étudiants</div>
+        <div class="display-6">{{ stats.total_students }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-12 col-md-4">
+    <div class="card">
+      <div class="card-body">
+        <div class="text-muted">Acceptés</div>
+        <div class="display-6">{{ stats.accepted_students }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-12 col-md-4">
+    <div class="card">
+      <div class="card-body">
+        <div class="text-muted">Revenus (mois)</div>
+        <div class="display-6">-</div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

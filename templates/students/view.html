@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h1 class="h4 mb-0">Fiche étudiant</h1>
+  <div class="d-flex gap-2">
+    <a class="btn btn-outline-secondary btn-sm" href="/students">Retour</a>
+    {% if user.role in ['admin', 'agent'] %}
+    <a class="btn btn-dark btn-sm" href="/students/{{ student.id }}/edit">Modifier</a>
+    {% endif %}
+  </div>
+</div>
+
+<div class="row g-3">
+  <div class="col-12 col-lg-7">
+    <div class="card">
+      <div class="card-body">
+        <dl class="row mb-0">
+          <dt class="col-sm-4">Nom</dt><dd class="col-sm-8">{{ student.full_name }}</dd>
+          <dt class="col-sm-4">Téléphone</dt><dd class="col-sm-8">{{ student.phone }}</dd>
+          <dt class="col-sm-4">Email</dt><dd class="col-sm-8">{{ student.email }}</dd>
+          <dt class="col-sm-4">Pays</dt><dd class="col-sm-8">{{ student.country }}</dd>
+          <dt class="col-sm-4">Niveau</dt><dd class="col-sm-8">{{ student.study_level }}</dd>
+          <dt class="col-sm-4">Programme</dt><dd class="col-sm-8">{{ student.program_choice }}</dd>
+          <dt class="col-sm-4">Université</dt><dd class="col-sm-8">{{ student.university }}</dd>
+          <dt class="col-sm-4">Statut</dt><dd class="col-sm-8">{{ student.status_name or '-' }}</dd>
+          <dt class="col-sm-4">Agent</dt><dd class="col-sm-8">{{ student.agent_name }}</dd>
+        </dl>
+
+        {% if student.notes %}
+        <hr />
+        <div>
+          <div class="text-muted mb-1">Notes</div>
+          <div class="border rounded p-2 bg-light">{{ student.notes }}</div>
+        </div>
+        {% endif %}
+
+        {% if user.role in ['admin', 'agent'] %}
+        <hr />
+        <form method="post" action="/students/{{ student.id }}/delete" onsubmit="return confirm('Supprimer cet étudiant ?');">
+          <button class="btn btn-outline-danger" type="submit">Supprimer</button>
+        </form>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="col-12 col-lg-5">
+    <div class="card">
+      <div class="card-header">Historique des statuts</div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table mb-0">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>De</th>
+                <th>Vers</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for h in history %}
+              <tr>
+                <td>{{ h.changed_at }}</td>
+                <td>{{ h.from_status_name or '-' }}</td>
+                <td>{{ h.to_status_name or '-' }}</td>
+              </tr>
+              {% else %}
+              <tr>
+                <td colspan="3" class="text-center text-muted py-3">Aucun historique</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-12">
+    <div class="card">
+      <div class="card-header">Documents</div>
+      <div class="card-body">
+        <form class="row g-2" method="post" action="/students/{{ student.id }}/documents" enctype="multipart/form-data">
+          <div class="col-12 col-md-4">
+            <input class="form-control" name="doc_type" placeholder="Type (ex: Passeport)" required />
+          </div>
+          <div class="col-12 col-md-6">
+            <input class="form-control" type="file" name="file" required accept=".pdf,.doc,.docx,.png,.jpg,.jpeg,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,image/png,image/jpeg" />
+            <div class="form-text">PDF / Word (DOC, DOCX) / Images (PNG, JPG). Max 10 Mo</div>
+          </div>
+          <div class="col-12 col-md-2 d-grid">
+            <button class="btn btn-dark" type="submit">Uploader</button>
+          </div>
+        </form>
+
+        <hr />
+
+        <div class="table-responsive">
+          <table class="table mb-0 align-middle">
+            <thead>
+              <tr>
+                <th>Type</th>
+                <th>Fichier</th>
+                <th>Taille</th>
+                <th>Date</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for d in documents %}
+              <tr>
+                <td>{{ d.doc_type }}</td>
+                <td>{{ d.original_filename }}</td>
+                <td>{{ (d.size_bytes // 1024) }} Ko</td>
+                <td>{{ d.uploaded_at }}</td>
+                <td class="text-end">
+                  <a class="btn btn-outline-secondary btn-sm" href="/students/documents/{{ d.id }}/download">Télécharger</a>
+                  {% if user.role in ['admin', 'agent'] %}
+                  <form class="d-inline" method="post" action="/students/documents/{{ d.id }}/delete" onsubmit="return confirm('Supprimer ce document ?');">
+                    <button class="btn btn-outline-danger btn-sm" type="submit">Supprimer</button>
+                  </form>
+                  {% endif %}
+                </td>
+              </tr>
+              {% else %}
+              <tr>
+                <td colspan="5" class="text-center text-muted py-3">Aucun document</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
