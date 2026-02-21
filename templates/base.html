@@ -1,45 +1,281 @@
 <!doctype html>
 <html lang="fr">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>AFCALINK TRAVEL</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
-  </head>
-  <body>
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-      <div class="container-fluid">
-        <a class="navbar-brand" href="/">AFCALINK TRAVEL</a>
-        <div class="d-flex">
-          {% if request.session.get('user_id') %}
-          <form method="post" action="/logout">
-            <button class="btn btn-outline-light btn-sm" type="submit">Déconnexion</button>
-          </form>
-          {% endif %}
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{% block title %}AFCALINK TRAVEL | Management Pro{% endblock %}</title>
+  <link rel="icon" type="image/png" href="{{ url_for('static', path='/img/logoafcalintravel.png') }}">
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link rel="stylesheet" href="{{ url_for('static', path='/style.css') }}" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lucide-static@0.321.0/font/lucide.css">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    .smaller {
+      font-size: 0.75rem;
+    }
+
+    .leading-none {
+      line-height: 1;
+    }
+
+    .animate-in {
+      animation: fadeIn 0.5s ease-out;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="app-container">
+    <!-- Sidebar -->
+    <aside class="sidebar shadow-lg">
+      <div class="sidebar-header">
+        <div class="d-flex align-items-center gap-3">
+          <img src="{{ url_for('static', path='/img/logoafcalintravel.png') }}" alt="AFCALINK TRAVEL"
+            class="sidebar-logo-img" style="width: 38px; height: 38px; object-fit: contain; border-radius: 8px;">
+          <div class="sidebar-logo">AFCALINK <span class="opacity-50 fw-light">PRO</span></div>
         </div>
       </div>
-    </nav>
 
-    <div class="container-fluid">
-      <div class="row">
-        <div class="col-12 col-md-3 col-lg-2 bg-light border-end min-vh-100 p-3">
-          <div class="list-group">
-            <a class="list-group-item list-group-item-action" href="/">Dashboard</a>
-            <a class="list-group-item list-group-item-action" href="/students">Étudiants</a>
-            <a class="list-group-item list-group-item-action" href="/prospects">Prospects</a>
-            <a class="list-group-item list-group-item-action" href="/payments">Paiements</a>
-            <a class="list-group-item list-group-item-action" href="/reports">Rapports journaliers</a>
-            <a class="list-group-item list-group-item-action" href="/logs">Historique (logs)</a>
-            <a class="list-group-item list-group-item-action" href="/admin">Admin</a>
+      <nav class="nav-links">
+        {% set p = request.url.path %}
+        {% set role = user.role if user else '' %}
+
+        <label class="text-muted smaller fw-bold px-3 mb-2 text-uppercase opacity-50">Exploitation</label>
+        <a class="nav-link {% if p == '/' %}active{% endif %}" href="/" title="Dashboard">
+          <i data-lucide="layout-dashboard"></i>
+          <span>Dashboard</span>
+        </a>
+
+        {% if role in ['admin', 'agent'] %}
+        <a class="nav-link {% if p.startswith('/activity') %}active{% endif %}" href="/activity/daily"
+          title="Rapport Journalier">
+          <i data-lucide="clipboard-list"></i>
+          <span>Rapport Journalier</span>
+        </a>
+        {% endif %}
+
+        <a class="nav-link {% if p.startswith('/students') %}active{% endif %}" href="/students" title="Étudiants">
+          <i data-lucide="users"></i>
+          <span>Étudiants</span>
+        </a>
+
+        {% if role in ['admin', 'agent', 'secretary', 'admission_director'] %}
+        <a class="nav-link {% if p.startswith('/prospects') %}active{% endif %}" href="/prospects" title="Prospects">
+          <i data-lucide="target"></i>
+          <span>Prospects</span>
+        </a>
+        {% endif %}
+
+        <label class="text-muted smaller fw-bold px-3 mb-2 mt-4 text-uppercase opacity-50">Gestion</label>
+        <a class="nav-link {% if p.startswith('/payments') %}active{% endif %}" href="/payments" title="Finances">
+          <i data-lucide="credit-card"></i>
+          <span>Finances</span>
+        </a>
+
+        {% if role in ['admin', 'operation_director'] %}
+        <a class="nav-link {% if p.startswith('/tasks') %}active{% endif %}" href="/tasks" title="Tâches">
+          <i data-lucide="check-square"></i>
+          <span>Tâches</span>
+        </a>
+        <a class="nav-link {% if p.startswith('/partners') %}active{% endif %}" href="/partners" title="Partenaires">
+          <i data-lucide="building-2"></i>
+          <span>Partenaires</span>
+        </a>
+        {% endif %}
+
+        {% if role in ['admin', 'secretary'] %}
+        <label class="text-muted smaller fw-bold px-3 mb-2 mt-4 text-uppercase opacity-50">Gestion Financière</label>
+        <a class="nav-link {% if p.startswith('/accounting') %}active{% endif %}" href="/accounting/pending"
+          title="Validation">
+          <i data-lucide="shield-check"></i>
+          <span>Comptabilité</span>
+          {% if pending_count and pending_count > 0 %}
+          <span class="badge bg-danger rounded-pill ms-auto" style="font-size: 0.6rem;">{{ pending_count }}</span>
+          {% endif %}
+        </a>
+        <a class="nav-link {% if p == '/payments' %}active{% endif %}" href="/payments" title="Journal">
+          <i data-lucide="banknote"></i>
+          <span>Journal Paiements</span>
+        </a>
+        {% endif %}
+
+        {% if role in ['admin', 'agent', 'admission_director', 'operation_director'] %}
+        <label class="text-muted smaller fw-bold px-3 mb-2 mt-4 text-uppercase opacity-50">Analyse</label>
+        <a class="nav-link {% if p.startswith('/activity') %}active{% endif %}" href="/activity/daily" title="Rapports">
+          <i data-lucide="bar-chart-3"></i>
+          <span>Rapports</span>
+        </a>
+        {% endif %}
+
+        {% if role in ['admin'] %}
+        <label class="text-muted smaller fw-bold px-3 mb-2 mt-4 text-uppercase opacity-50">Système</label>
+        <a class="nav-link {% if p.startswith('/logs') %}active{% endif %}" href="/logs" title="Audit">
+          <i data-lucide="history"></i>
+          <span>Audit</span>
+        </a>
+        <a class="nav-link {% if p.startswith('/admin') %}active{% endif %}" href="/admin" title="Paramètres">
+          <i data-lucide="settings"></i>
+          <span>Paramètres</span>
+        </a>
+        {% endif %}
+      </nav>
+
+      <div class="sidebar-footer">
+        {% if request.session.get('user_id') %}
+        <a class="nav-link mb-3 position-relative {% if p == '/notifications' %}active{% endif %}" href="/notifications"
+          title="Notifications">
+          <i data-lucide="bell"></i>
+          <span>Notifications</span>
+          {% if user and user.unread_notifications > 0 %}
+          <span class="badge bg-danger rounded-pill position-absolute end-0 me-3"
+            style="font-size: 0.6rem; margin-top: -10px;">{{ user.unread_notifications }}</span>
+          {% endif %}
+        </a>
+        <div class="user-profile-widget d-flex align-items-center gap-3">
+          <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center fw-bold"
+            style="width: 32px; height: 32px; min-width: 32px; font-size: 0.8rem;">
+            {{ user.full_name[:1] if user else '?' }}
+          </div>
+          <div class="overflow-hidden">
+            <div class="extra-small fw-bold text-dark text-truncate" style="font-size: 0.75rem;">{{ user.full_name if
+              user else 'U' }}</div>
+            <div class="extra-small text-muted text-truncate" style="font-size: 0.65rem;">{{ user.role|capitalize if
+              user else '' }}</div>
+          </div>
+        </div>
+        <form method="post" action="/logout">
+          <button
+            class="btn btn-link text-muted extra-small p-0 w-100 d-flex align-items-center justify-content-center gap-2 opacity-50 hover-opacity-100 text-decoration-none"
+            type="submit">
+            <i data-lucide="log-out" style="width: 12px;"></i>
+            Déconnexion
+          </button>
+        </form>
+        {% endif %}
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <div class="main-content">
+      <header class="top-navbar">
+        <div class="d-flex align-items-center gap-3">
+          <button class="header-action-btn border-0 shadow-sm" id="sidebarToggle" title="Basculer le menu">
+            <i data-lucide="menu" style="width: 18px;"></i>
+          </button>
+          <div class="page-title-group">
+            <h4 class="h6 mb-0 fw-bold text-dark">{% block page_title %}Tableau de Bord{% endblock %}</h4>
+            <div class="extra-small text-muted d-none d-md-block" style="font-size: 0.65rem;">AFCALINK TRAVEL •
+              Management Pro</div>
           </div>
         </div>
 
-        <main class="col-12 col-md-9 col-lg-10 p-4">
-          {% block content %}{% endblock %}
-        </main>
-      </div>
-    </div>
+        <div class="d-flex align-items-center gap-2">
+          <div
+            class="search-box-premium d-none d-lg-flex align-items-center px-3 py-2 bg-white rounded-pill border border-light shadow-sm me-2"
+            style="width: 220px;">
+            <i data-lucide="search" class="text-muted me-2" style="width: 14px;"></i>
+            <input type="text" placeholder="Rechercher..." class="bg-transparent border-0 smaller w-100"
+              style="outline: none; font-size: 0.75rem;">
+          </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-  </body>
+          <a class="header-action-btn border-0 bg-transparent text-muted ms-2 position-relative" href="/notifications"
+            title="Notifications">
+            <i data-lucide="bell" style="width: 18px;"></i>
+            {% if user and user.unread_notifications > 0 %}
+            <span class="position-absolute translate-middle badge rounded-pill bg-danger"
+              style="font-size: 0.55rem; padding: 0.2rem 0.3rem; top: 5px; right: -5px;">
+              {{ user.unread_notifications }}
+            </span>
+            {% endif %}
+          </a>
+
+          <div class="d-flex align-items-center gap-2 ms-3 ps-3 border-start border-light">
+            <div class="text-end d-none d-md-block">
+              <div class="smaller fw-bold text-dark mb-0 leading-none">{{ user.full_name.split(' ')[0] if user else '?'
+                }}</div>
+              <div class="extra-small text-muted" style="font-size: 0.6rem;">{{ user.role|upper if user else '' }}</div>
+            </div>
+            <div
+              class="avatar-sm bg-primary text-white rounded-circle d-flex align-items-center justify-content-center fw-bold"
+              style="width: 32px; height: 32px; font-size: 0.8rem;">
+              {{ user.full_name[:1] if user else 'U' }}
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <main class="p-4 p-lg-5 animate-in">
+        {% if flashes %}
+        <div class="mb-4">
+          {% for f in flashes %}
+          <div class="alert alert-{{ f.category }} alert-dismissible fade show border-0 shadow-sm" role="alert">
+            <div class="d-flex align-items-center gap-2">
+              <i data-lucide="{% if f.category == 'success' %}check-circle{% else %}alert-circle{% endif %}"
+                style="width: 18px;"></i>
+              {{ f.message }}
+            </div>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+          </div>
+          {% endfor %}
+        </div>
+        {% endif %}
+
+        {% block content %}{% endblock %}
+      </main>
+    </div>
+  </div>
+
+  {% block modals %}{% endblock %}
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    lucide.createIcons();
+
+    // Sidebar Toggle Logic
+    const toggleBtn = document.getElementById('sidebarToggle');
+    const sidebar = document.querySelector('.sidebar');
+    const mainContent = document.querySelector('.main-content');
+
+    // Check saved state
+    if (localStorage.getItem('sidebar-collapsed') === 'true') {
+      sidebar.classList.add('collapsed');
+      mainContent.classList.add('expanded');
+    }
+
+    if (toggleBtn) {
+      toggleBtn.addEventListener('click', () => {
+        if (window.innerWidth < 992) {
+          sidebar.classList.toggle('show');
+        } else {
+          const isCollapsed = sidebar.classList.toggle('collapsed');
+          mainContent.classList.toggle('expanded');
+          localStorage.setItem('sidebar-collapsed', isCollapsed);
+        }
+      });
+    }
+
+    // Auto-hide sidebar on mobile link click
+    document.querySelectorAll('.nav-link').forEach(link => {
+      link.addEventListener('click', () => {
+        if (window.innerWidth < 992) {
+          document.querySelector('.sidebar').classList.remove('show');
+        }
+      });
+    });
+  </script>
+</body>
+
 </html>

@@ -1,6 +1,114 @@
 {% extends "base.html" %}
 
+{% block page_title %}Historique Global{% endblock %}
+
 {% block content %}
-<h1 class="h4">Historique (logs)</h1>
-<p class="text-muted mb-0">Placeholder</p>
+<div class="row mb-4">
+    <div class="col-12">
+        <h3 class="fw-bold mb-0">Historique des Activités</h3>
+        <p class="text-muted smaller">Traçabilité complète des modifications, paiements et statuts</p>
+    </div>
+</div>
+
+<div class="card shadow-sm border-0">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="bg-light">
+                    <tr class="smaller text-muted text-uppercase fw-bold">
+                        <th class="ps-4 py-3">Événement</th>
+                        <th class="py-3">Candidat / Détails</th>
+                        <th class="py-3">Ancien / Type</th>
+                        <th class="py-3">Nouveau / Valeur</th>
+                        <th class="py-3">Acteur</th>
+                        <th class="pe-4 py-3 text-end">Date & Heure</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in history %}
+                    <tr>
+                        <td class="ps-4">
+                            {% if item.type == 'status' %}
+                            <span class="badge bg-primary-soft text-primary rounded-pill px-3 py-1 smaller">
+                                <i data-lucide="refresh-cw" class="d-inline-block align-middle me-1"
+                                    style="width: 12px;"></i> Statut
+                            </span>
+                            {% elif item.type == 'payment' %}
+                            <span class="badge bg-success-soft text-success rounded-pill px-3 py-1 smaller">
+                                <i data-lucide="dollar-sign" class="d-inline-block align-middle me-1"
+                                    style="width: 12px;"></i> Paiement
+                            </span>
+                            {% elif item.type == 'task' %}
+                            <span class="badge bg-info-soft text-info rounded-pill px-3 py-1 smaller">
+                                <i data-lucide="check-square" class="d-inline-block align-middle me-1"
+                                    style="width: 12px;"></i> Tâche
+                            </span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="fw-bold text-dark">{{ item.student_name }}</div>
+                            {% if item.student_id %}
+                            <a href="/students/{{ item.student_id }}"
+                                class="smaller text-primary text-decoration-none">Voir dossier</a>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="text-muted smaller">{{ item.from_val or 'N/A' }}</span>
+                        </td>
+                        <td>
+                            <div
+                                class="fw-medium {% if item.type == 'payment' %}text-success{% elif item.type == 'status' %}text-primary{% endif %}">
+                                {{ item.to_val }}
+                            </div>
+                        </td>
+                        <td>
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="avatar-xs bg-light rounded-circle d-flex align-items-center justify-content-center smaller fw-bold"
+                                    style="width: 24px; height: 24px;">
+                                    {{ item.user_name[:1] if item.user_name else 'S' }}
+                                </div>
+                                <span class="smaller">{{ item.user_name or 'Système' }}</span>
+                            </div>
+                        </td>
+                        <td class="pe-4 text-end">
+                            <div class="smaller fw-bold text-dark">{{ item.timestamp[:10].split('-')|reverse|join('/')
+                                }}</div>
+                            <div class="text-muted smaller">{{ item.timestamp[11:16] }}</div>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6" class="text-center py-5">
+                            <i data-lucide="history" class="text-muted opacity-10 mb-3"
+                                style="width: 64px; height: 64px;"></i>
+                            <p class="text-muted">Aucun historique disponible pour le moment.</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<style>
+    .badge-status {
+        background-color: #e0e7ff;
+        color: #4338ca;
+    }
+
+    .badge-payment {
+        background-color: #dcfce7;
+        color: #15803d;
+    }
+
+    .badge-task {
+        background-color: #e0f2fe;
+        color: #0369a1;
+    }
+
+    .avatar-xs {
+        font-size: 0.65rem;
+    }
+</style>
 {% endblock %}

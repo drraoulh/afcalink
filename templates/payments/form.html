@@ -1,67 +1,311 @@
 {% extends "base.html" %}
 
+{% block page_title %}Nouvelle Recette | {{ student.full_name }}{% endblock %}
+
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-3">
-  <h1 class="h4 mb-0">Ajouter paiement - {{ student.full_name }}</h1>
-  <a class="btn btn-outline-secondary btn-sm" href="/payments/student/{{ student.id }}">Retour</a>
-</div>
+<div class="row g-4 mb-5 animate-in">
+  <div class="col-12 col-xl-10 mx-auto">
+    <!-- Header with Back Button -->
+    <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-3">
+      <div class="d-flex align-items-center gap-3">
+        <a href="/payments/student/{{ student.id }}"
+          class="btn btn-white rounded-circle shadow-sm p-0 d-flex align-items-center justify-content-center"
+          style="width: 45px; height: 45px;">
+          <i data-lucide="arrow-left" style="width: 22px;"></i>
+        </a>
+        <div>
+          <h2 class="fw-800 mb-0">Encaisser un Paiement</h2>
+          <p class="text-muted mb-0">Règlement sécurisé • <span class="text-primary fw-600">{{ student.full_name
+              }}</span></p>
+        </div>
+      </div>
+      <div class="badge bg-primary-soft text-primary px-4 py-2 rounded-pill fw-bold">
+        ID Étudiant: #{{ student.id }}
+      </div>
+    </div>
 
-<div class="card">
-  <div class="card-body">
-    <form method="post" action="/payments/student/{{ student.id }}/new" enctype="multipart/form-data">
-      <div class="row g-3">
-        <div class="col-12 col-md-4">
-          <label class="form-label">Type de paiement</label>
-          <input class="form-control" name="payment_type" required placeholder="Frais de dossier" />
-        </div>
-        <div class="col-12 col-md-4">
-          <label class="form-label">Montant</label>
-          <input class="form-control" type="number" name="amount" required min="0" />
-        </div>
-        <div class="col-12 col-md-4">
-          <label class="form-label">Devise</label>
-          <input class="form-control" name="currency" value="{{ student.currency or 'FCFA' }}" required />
-        </div>
-
-        <div class="col-12 col-md-4">
-          <label class="form-label">Mode de paiement</label>
-          <select class="form-select" name="payment_mode" required>
-            <option value="cash">Cash</option>
-            <option value="mobile_money">Mobile Money</option>
-            <option value="bank">Banque</option>
-          </select>
-        </div>
-        <div class="col-12 col-md-4">
-          <label class="form-label">Date</label>
-          <input class="form-control" type="date" name="payment_date" required />
-        </div>
-        <div class="col-12 col-md-4">
-          <label class="form-label">Statut</label>
-          <select class="form-select" name="payment_status" required>
-            <option value="received">Reçu</option>
-            <option value="pending">En attente</option>
-            <option value="cancelled">Annulé</option>
-          </select>
+    <div class="row g-4">
+      <!-- Left Column: Guidelines & Contract Summary -->
+      <div class="col-12 col-lg-4 order-2 order-lg-1">
+        <div class="card border-0 shadow-premium p-4 bg-dark text-white mb-4 position-relative overflow-hidden"
+          style="border-radius: 24px;">
+          <div class="position-absolute bottom-0 end-0 p-3 opacity-10">
+            <i data-lucide="shield-check" style="width: 100px; height: 100px;"></i>
+          </div>
+          <div class="position-relative">
+            <div class="bg-primary p-3 rounded-4 d-inline-block mb-3">
+              <i data-lucide="banknote" style="width: 24px; height: 24px;"></i>
+            </div>
+            <h5 class="fw-bold mb-3">Procédure d'encaissement</h5>
+            <p class="opacity-75 smaller mb-0">
+              Vérifiez scrupuleusement le montant et le mode de règlement. L'ajout d'une preuve numérique (reçu, capture
+              d'écran) est <b>obligatoire</b> pour la traçabilité.
+            </p>
+          </div>
         </div>
 
-        <div class="col-12 col-md-6">
-          <label class="form-label">Montant total attendu (optionnel)</label>
-          <input class="form-control" type="number" name="total_amount" min="0" value="{{ student.total_amount or 0 }}" />
-          <div class="form-text">Met à jour le montant total attendu sur la fiche étudiant</div>
-        </div>
+        <div class="card border-0 shadow-premium p-4 mb-4" style="border-radius: 24px;">
+          <label class="extra-small text-uppercase fw-800 text-muted letter-spacing-1 mb-3 d-block">Situation
+            Financière</label>
+          <div class="p-4 rounded-4 bg-light border border-light">
+            <div class="d-flex justify-content-between align-items-end mb-1">
+              <span class="smaller text-muted">Contrat Total</span>
+              <span class="fw-bold text-dark">{{ "{:,.0f}".format(student.total_amount or 0).replace(',', ' ') }} {{
+                student.currency }}</span>
+            </div>
+            <div class="progress rounded-pill bg-white mb-3" style="height: 6px;">
+              <div class="progress-bar bg-primary" style="width: 100%"></div>
+            </div>
 
-        <div class="col-12 col-md-6">
-          <label class="form-label">Reçu (optionnel)</label>
-          <input class="form-control" type="file" name="receipt" accept=".pdf,.doc,.docx,.png,.jpg,.jpeg,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,image/png,image/jpeg" />
-          <div class="form-text">PDF / Word / Images. Max 10 Mo</div>
+            <div class="d-flex justify-content-between align-items-end mb-1">
+              <span class="smaller text-muted">Déjà réglé</span>
+              <span class="fw-bold text-success">--</span>
+            </div>
+            <div class="progress rounded-pill bg-white mb-3" style="height: 6px;">
+              <div class="progress-bar bg-success" style="width: 0%"></div>
+            </div>
+
+            <div class="pt-2 border-top mt-2">
+              <p class="mb-0 smaller text-muted italic">Les montants sont mis à jour après validation comptable.</p>
+            </div>
+          </div>
         </div>
       </div>
 
-      <div class="mt-4 d-flex gap-2">
-        <button class="btn btn-dark" type="submit">Enregistrer</button>
-        <a class="btn btn-outline-secondary" href="/payments/student/{{ student.id }}">Annuler</a>
+      <!-- Right Column: The Form -->
+      <div class="col-12 col-lg-8 order-1 order-lg-2">
+        <div class="card border-0 shadow-premium p-5" style="border-radius: 24px;">
+          <form method="post" enctype="multipart/form-data" id="paymentForm">
+            <input type="hidden" name="payment_status" value="pending" />
+
+            <div class="row g-4">
+              <!-- Type de Frais -->
+              <div class="col-12">
+                <label class="form-label fw-700 extra-small text-uppercase text-muted letter-spacing-1">Type de
+                  Frais</label>
+                <div class="row g-2">
+                  {% for type in ['Inscription', 'Scolarité', 'Visa', 'Billet', 'Logement', 'Autre'] %}
+                  <div class="col-6 col-md-4">
+                    <input type="radio" class="btn-check" name="payment_type" id="type_{{type}}" value="{{type}}"
+                      required {% if loop.first %}checked{% endif %}>
+                    <label class="btn btn-outline-light text-dark fw-600 w-100 py-3 rounded-4 transition-all"
+                      for="type_{{type}}">
+                      {{type}}
+                    </label>
+                  </div>
+                  {% endfor %}
+                </div>
+              </div>
+
+              <!-- Montant -->
+              <div class="col-md-8">
+                <label class="form-label fw-700 extra-small text-uppercase text-muted letter-spacing-1">Montant à
+                  encaisser</label>
+                <div class="input-group">
+                  <span class="input-group-text bg-light border-0 px-4 rounded-start-4">
+                    <i data-lucide="coins" class="text-primary" style="width: 20px;"></i>
+                  </span>
+                  <input type="number" class="form-control bg-light border-0 py-4 px-3 fw-800 fs-4" name="amount"
+                    required placeholder="0" min="1" />
+                </div>
+              </div>
+
+              <!-- Devise -->
+              <div class="col-md-4">
+                <label class="form-label fw-700 extra-small text-uppercase text-muted letter-spacing-1">Devise</label>
+                <select class="form-select bg-light border-0 py-4 px-4 rounded-4 fw-bold" name="currency">
+                  <option value="FCFA" {% if student.currency=='FCFA' %}selected{% endif %}>FCFA</option>
+                  <option value="USD" {% if student.currency=='USD' %}selected{% endif %}>USD</option>
+                  <option value="EUR" {% if student.currency=='EUR' %}selected{% endif %}>EUR</option>
+                  <option value="RMB" {% if student.currency=='RMB' %}selected{% endif %}>RMB</option>
+                </select>
+              </div>
+
+              <!-- Mode de Paiement -->
+              <div class="col-md-6">
+                <label class="form-label fw-700 extra-small text-uppercase text-muted letter-spacing-1">Mode de
+                  règlement</label>
+                <select class="form-select bg-light border-0 py-4 px-4 rounded-4 fw-bold" name="payment_mode" required>
+                  <option value="Espèces">💵 Espèces (Cash)</option>
+                  <option value="OM / MoMo">📱 Mobile Money (OM/MoMo)</option>
+                  <option value="Virement">🏦 Virement Bancaire</option>
+                  <option value="Chèque">✍️ Chèque</option>
+                </select>
+              </div>
+
+              <!-- Date -->
+              <div class="col-md-6">
+                <label class="form-label fw-700 extra-small text-uppercase text-muted letter-spacing-1">Date de
+                  l'opération</label>
+                <div class="input-group">
+                  <span class="input-group-text bg-light border-0 px-4 rounded-start-4">
+                    <i data-lucide="calendar" class="text-muted" style="width: 20px;"></i>
+                  </span>
+                  <input type="date" class="form-control bg-light border-0 py-4 px-3 rounded-end-4 fw-bold"
+                    name="payment_date" required />
+                </div>
+              </div>
+
+              <!-- File Upload -->
+              <div class="col-12">
+                <label class="form-label fw-700 extra-small text-uppercase text-muted letter-spacing-1">Preuve de
+                  paiement (Justificatif)</label>
+                <div
+                  class="upload-zone rounded-4 p-5 text-center transition-all bg-light border-2 border-dashed position-relative"
+                  id="dropZone">
+                  <input type="file" name="receipt"
+                    class="position-absolute top-0 start-0 w-100 h-100 opacity-0 cursor-pointer" id="receiptInput">
+                  <div class="upload-content">
+                    <div class="icon-circle bg-white shadow-sm mx-auto mb-3">
+                      <i data-lucide="upload-cloud" class="text-primary" style="width: 32px;"></i>
+                    </div>
+                    <h6 class="fw-bold mb-1">Cliquez ou déposez un fichier</h6>
+                    <p class="smaller text-muted mb-0">PDF, JPG, PNG (Max 10 Mo)</p>
+                  </div>
+                  <div id="fileInfo" class="mt-3 d-none">
+                    <span class="badge bg-success-soft text-success px-4 py-2 rounded-pill fw-bold">
+                      <i data-lucide="file-check" class="me-2" style="width: 14px;"></i>
+                      <span id="fileNameDisplay">Fichier prêt</span>
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Submit Button -->
+              <div class="col-12 mt-4 pt-4 border-top">
+                <div class="d-flex flex-column flex-md-row align-items-center gap-3">
+                  <button class="btn btn-primary rounded-pill px-5 py-3 fw-800 flex-grow-1 shadow-primary-sm w-100"
+                    type="submit">
+                    ENREGISTRER L'ENCAISSEMENT
+                  </button>
+                  <a class="btn btn-light rounded-pill px-5 py-3 fw-600 w-100 w-md-auto"
+                    href="/payments/student/{{ student.id }}">Annuler</a>
+                </div>
+              </div>
+            </div>
+          </form>
+        </div>
       </div>
-    </form>
+    </div>
   </div>
 </div>
+
+<style>
+  .fw-800 {
+    font-weight: 800;
+  }
+
+  .fw-700 {
+    font-weight: 700;
+  }
+
+  .fw-600 {
+    font-weight: 600;
+  }
+
+  .letter-spacing-1 {
+    letter-spacing: 1.5px;
+  }
+
+  .btn-white {
+    background: white;
+    border: none;
+    color: var(--dark);
+    transition: all 0.3s ease;
+  }
+
+  .btn-white:hover {
+    transform: translateX(-5px);
+    background: #f8fafc;
+  }
+
+  /* Custom radio buttons grid */
+  .btn-check:checked+.btn-outline-light {
+    background-color: var(--primary);
+    border-color: var(--primary);
+    color: white !important;
+    box-shadow: 0 10px 15px -3px rgba(79, 70, 229, 0.3);
+    transform: translateY(-3px);
+  }
+
+  .btn-outline-light {
+    border: 1px solid #e1e8f0;
+    background: #f8fafc;
+  }
+
+  .btn-outline-light:hover {
+    background: #f1f5f9;
+    border-color: #cbd5e1;
+  }
+
+  .upload-zone {
+    border-color: #e2e8f0;
+    cursor: pointer;
+  }
+
+  .upload-zone:hover {
+    border-color: var(--primary);
+    background-color: #eff6ff !important;
+  }
+
+  .icon-circle {
+    width: 60px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+  }
+
+  .italic {
+    font-style: italic;
+  }
+
+  .shadow-primary-sm {
+    box-shadow: 0 10px 20px -5px rgba(79, 70, 229, 0.4);
+  }
+
+  @media (max-width: 991px) {
+    .order-lg-1 {
+      order: 2;
+    }
+
+    .order-lg-2 {
+      order: 1;
+    }
+  }
+</style>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    const dateInput = document.querySelector('input[name="payment_date"]');
+    if (dateInput && !dateInput.value) {
+      dateInput.value = new Date().toISOString().split('T')[0];
+    }
+
+    const fileInput = document.getElementById('receiptInput');
+    const display = document.getElementById('fileNameDisplay');
+    const fileInfo = document.getElementById('fileInfo');
+    const uploadContent = document.querySelector('.upload-content');
+
+    if (fileInput) {
+      fileInput.addEventListener('change', function () {
+        if (this.files && this.files.length > 0) {
+          display.textContent = this.files[0].name;
+          fileInfo.classList.remove('d-none');
+          uploadContent.classList.add('opacity-50');
+          lucide.createIcons();
+        }
+      });
+    }
+
+    // Form submission animation
+    const form = document.getElementById('paymentForm');
+    form.addEventListener('submit', function () {
+      const btn = form.querySelector('button[type="submit"]');
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Traitement...';
+    });
+  });
+</script>
 {% endblock %}

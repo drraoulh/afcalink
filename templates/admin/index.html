@@ -1,6 +1,190 @@
 {% extends "base.html" %}
 
+{% block page_title %}Paramètres du Système{% endblock %}
+
 {% block content %}
-<h1 class="h4">Admin</h1>
-<p class="text-muted mb-0">Placeholder</p>
+<div class="row g-4 mb-5 animate-in">
+    <div class="col-12">
+        <div class="card border-0 shadow-premium p-4 bg-dark text-white overflow-hidden position-relative"
+            style="border-radius: 24px;">
+            <div class="position-absolute top-0 end-0 p-5 opacity-10">
+                <i data-lucide="settings" style="width: 150px; height: 150px;"></i>
+            </div>
+            <div class="position-relative">
+                <h3 class="fw-extrabold mb-1">Configuration & Administration</h3>
+                <p class="opacity-75 mb-0">Gérez les utilisateurs, les accès et les paramètres globaux de la plateforme
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 animate-in" style="animation-delay: 0.1s;">
+    <!-- Gestion des Utilisateurs -->
+    <div class="col-12 col-lg-4">
+        <div class="card border-0 shadow-premium h-100 p-4 transition-all hover-translate-y">
+            <div class="d-flex align-items-center gap-3 mb-4">
+                <div class="bg-primary-soft p-3 rounded-4 text-primary">
+                    <i data-lucide="users" style="width: 24px; height: 24px;"></i>
+                </div>
+                <div>
+                    <h5 class="fw-bold mb-0">Utilisateurs</h5>
+                    <p class="text-muted extra-small mb-0">Gestion de l'équipe</p>
+                </div>
+            </div>
+            <p class="text-muted smaller mb-4">Ajoutez des nouveaux membres, modifiez les rôles et gérez les accès aux
+                différents modules.</p>
+            <div class="mt-auto">
+                <a href="/admin/users"
+                    class="btn btn-primary w-100 rounded-pill py-2 fw-bold d-flex align-items-center justify-content-center gap-2">
+                    <i data-lucide="user-plus" style="width: 18px;"></i>
+                    Gérer l'équipe
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sécurité & Audit -->
+    <div class="col-12 col-lg-4">
+        <div class="card border-0 shadow-premium h-100 p-4 transition-all hover-translate-y">
+            <div class="d-flex align-items-center gap-3 mb-4">
+                <div class="bg-info-soft p-3 rounded-4 text-info">
+                    <i data-lucide="shield-check" style="width: 24px; height: 24px;"></i>
+                </div>
+                <div>
+                    <h5 class="fw-bold mb-0">Sécurité & Audit</h5>
+                    <p class="text-muted extra-small mb-0">Journaux d'activité</p>
+                </div>
+            </div>
+            <p class="text-muted smaller mb-4">Consultez les logs de connexion et les actions critiques effectuées sur
+                le système pour garantir la traçabilité.</p>
+            <div class="mt-auto">
+                <a href="/logs"
+                    class="btn btn-info-soft text-info w-100 rounded-pill py-2 fw-bold d-flex align-items-center justify-content-center gap-2">
+                    <i data-lucide="list-ordered" style="width: 18px;"></i>
+                    Voir les Logs
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Paramètres Généraux -->
+    <div class="col-12 col-lg-4">
+        <div class="card border-0 shadow-premium h-100 p-4 transition-all hover-translate-y">
+            <div class="d-flex align-items-center gap-3 mb-4">
+                <div class="bg-warning-soft p-3 rounded-4 text-warning">
+                    <i data-lucide="sliders" style="width: 24px; height: 24px;"></i>
+                </div>
+                <div>
+                    <h5 class="fw-bold mb-0">Préférences</h5>
+                    <p class="text-muted extra-small mb-0">Configuration système</p>
+                </div>
+            </div>
+            <p class="text-muted smaller mb-4">Configurez les devises, les statuts de dossiers, et les notifications
+                automatiques.</p>
+            <div class="mt-auto">
+                <button
+                    class="btn btn-light w-100 rounded-pill py-2 fw-bold d-flex align-items-center justify-content-center gap-2 disabled">
+                    <i data-lucide="lock" style="width: 18px;"></i>
+                    Bientôt disponible
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-5 animate-in" style="animation-delay: 0.2s;">
+    <div class="col-12">
+        <div class="card border-0 shadow-premium p-4">
+            <h5 class="fw-bold mb-4">Résumé des accès par rôle</h5>
+            <div class="table-responsive">
+                <table class="table table-borderless align-middle">
+                    <thead>
+                        <tr class="bg-light-soft">
+                            <th class="ps-4 py-3 text-muted extra-small text-uppercase fw-bold">Rôle</th>
+                            <th class="py-3 text-muted extra-small text-uppercase fw-bold">Droits Principaux</th>
+                            <th class="py-3 text-muted extra-small text-uppercase fw-bold text-center">Paiements</th>
+                            <th class="pe-4 py-3 text-end text-muted extra-small text-uppercase fw-bold">Statut</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td class="ps-4 py-3">
+                                <div class="badge bg-dark px-3 py-2 rounded-pill">Administrateur</div>
+                            </td>
+                            <td class="py-3 smaller">Contrôle total du système et des utilisateurs</td>
+                            <td class="py-3 text-center text-success"><i data-lucide="check-circle"
+                                    style="width: 18px;"></i></td>
+                            <td class="pe-4 py-3 text-end"><span
+                                    class="badge bg-success-soft text-success rounded-pill">Actif</span></td>
+                        </tr>
+                        <tr>
+                            <td class="ps-4 py-3">
+                                <div class="badge bg-primary px-3 py-2 rounded-pill">Agent Commercial</div>
+                            </td>
+                            <td class="py-3 smaller">Gestion des prospects et inscriptions clients</td>
+                            <td class="py-3 text-center text-warning"><i data-lucide="clock" style="width: 18px;"></i>
+                                Saisie uniquement</td>
+                            <td class="pe-4 py-3 text-end"><span
+                                    class="badge bg-success-soft text-success rounded-pill">Actif</span></td>
+                        </tr>
+                        <tr>
+                            <td class="ps-4 py-3">
+                                <div class="badge bg-info px-3 py-2 rounded-pill">Secrétaire / Comptable</div>
+                            </td>
+                            <td class="py-3 smaller">Validation des paiements et accueil physique</td>
+                            <td class="py-3 text-center text-success"><i data-lucide="check-circle"
+                                    style="width: 18px;"></i> Validation</td>
+                            <td class="pe-4 py-3 text-end"><span
+                                    class="badge bg-success-soft text-success rounded-pill">Actif</span></td>
+                        </tr>
+                        <tr>
+                            <td class="ps-4 py-3">
+                                <div class="badge bg-danger px-3 py-2 rounded-pill">Dir. Admission</div>
+                            </td>
+                            <td class="py-3 smaller">Supervision globale de tous les étudiants</td>
+                            <td class="py-3 text-center text-muted"><i data-lucide="eye" style="width: 18px;"></i>
+                                Lecture</td>
+                            <td class="pe-4 py-3 text-end"><span
+                                    class="badge bg-success-soft text-success rounded-pill">Actif</span></td>
+                        </tr>
+                        <tr>
+                            <td class="ps-4 py-3">
+                                <div class="badge bg-success px-3 py-2 rounded-pill">Dir. Opérations</div>
+                            </td>
+                            <td class="py-3 smaller">Coordination des tâches et suivi d'exécution</td>
+                            <td class="py-3 text-center text-muted"><i data-lucide="list" style="width: 18px;"></i>
+                                Suivi</td>
+                            <td class="pe-4 py-3 text-end"><span
+                                    class="badge bg-success-soft text-success rounded-pill">Actif</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .fw-extrabold {
+        font-weight: 800;
+    }
+
+    .extra-small {
+        font-size: 0.65rem;
+    }
+
+    .letter-spacing-1 {
+        letter-spacing: 1.1px;
+    }
+
+    .bg-light-soft {
+        background-color: #f8fafc;
+    }
+
+    .hover-translate-y:hover {
+        transform: translateY(-8px);
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    }
+</style>
 {% endblock %}

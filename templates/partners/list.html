@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+
+{% block page_title %}Universités & Partenaires{% endblock %}
+
+{% block content %}
+<div class="row mb-4 align-items-center">
+    <div class="col-md-6">
+        <h3 class="fw-bold mb-0">Base de Données Partenaires</h3>
+        <p class="text-muted smaller mb-0">Gestion des universités et agences partenaires à l'international</p>
+    </div>
+    <div class="col-md-6 d-flex justify-content-md-end gap-2 mt-3 mt-md-0">
+        <form class="d-flex gap-2" method="get">
+            <div class="input-group input-group-sm" style="max-width: 250px;">
+                <span class="input-group-text bg-white border-end-0"><i data-lucide="search"
+                        style="width: 14px;"></i></span>
+                <input type="text" name="search" class="form-control border-start-0" placeholder="Nom, pays..."
+                    value="{{ current_search }}">
+            </div>
+        </form>
+        {% if user.role == 'admin' %}
+        <button class="btn btn-primary btn-sm d-flex align-items-center gap-2" data-bs-toggle="modal"
+            data-bs-target="#newPartnerModal">
+            <i data-lucide="plus" style="width: 16px;"></i>
+            Ajouter
+        </button>
+        {% endif %}
+    </div>
+</div>
+
+<div class="row g-3">
+    {% for p in partners %}
+    <div class="col-12 col-xl-6">
+        <div class="card shadow-sm border-0 h-100 partner-card overflow-hidden">
+            <div class="row g-0 h-100">
+                <div class="col-auto bg-primary-soft d-flex align-items-center justify-content-center px-4 py-3"
+                    style="min-width: 80px;">
+                    <i data-lucide="university" class="text-primary" style="width: 32px; height: 32px;"></i>
+                </div>
+                <div class="col p-4">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <div>
+                            <h5 class="fw-bold mb-0 text-dark">{{ p.name }}</h5>
+                            <span class="badge bg-light text-primary border rounded-pill px-3 py-1 smaller mt-2">
+                                <i data-lucide="globe" class="d-inline-block align-middle me-1"
+                                    style="width: 12px;"></i> {{ p.country }}
+                            </span>
+                        </div>
+                        {% if user.role == 'admin' %}
+                        <div class="dropdown">
+                            <button class="btn btn-link text-muted p-0" data-bs-toggle="dropdown"><i
+                                    data-lucide="more-vertical"></i></button>
+                            <ul class="dropdown-menu dropdown-menu-end shadow border-0 smaller">
+                                <li>
+                                    <form action="/partners/{{ p.id }}/delete" method="post"
+                                        onsubmit="return confirm('Supprimer ce partenaire ?')">
+                                        <button type="submit"
+                                            class="dropdown-item text-danger d-flex align-items-center gap-2"><i
+                                                data-lucide="trash-2" style="width: 14px;"></i> Supprimer</button>
+                                    </form>
+                                </li>
+                            </ul>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="row g-3 mt-2">
+                        <div class="col-6">
+                            <label class="text-muted smaller text-uppercase fw-bold d-block mb-1">Contact</label>
+                            <div class="smaller fw-medium text-dark">{{ p.contact_person or 'Néant' }}</div>
+                            <div class="smaller text-muted">{{ p.email or '' }}</div>
+                        </div>
+                        <div class="col-6">
+                            <label class="text-muted smaller text-uppercase fw-bold d-block mb-1">Coordonnées</label>
+                            <div class="smaller fw-medium text-dark">{{ p.phone or 'Néant' }}</div>
+                            {% if p.website %}
+                            <a href="{{ p.website }}" target="_blank"
+                                class="smaller text-primary text-decoration-none">Visiter le site <i
+                                    data-lucide="external-link" style="width: 10px;"></i></a>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    {% if p.notes %}
+                    <div class="mt-3 bg-light p-2 rounded smaller text-secondary">
+                        <i data-lucide="info" class="me-1 opacity-50" style="width: 12px;"></i> {{ p.notes }}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="col-12 text-center py-5">
+        <i data-lucide="building-2" class="text-muted opacity-10 mb-3" style="width: 64px; height: 64px;"></i>
+        <p class="text-muted">Aucun partenaire enregistré dans la base de données.</p>
+    </div>
+    {% endfor %}
+</div>
+
+{% endblock %}
+
+{% block modals %}
+<!-- New Partner Modal -->
+<div class="modal fade" id="newPartnerModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold">Ajouter un Partenaire</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" action="/partners/new">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Nom de l'institution</label>
+                        <input type="text" name="name" class="form-control" required
+                            placeholder="Ex: Université de Pékin">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Pays</label>
+                        <input type="text" name="country" class="form-control" required placeholder="Chine, Canada...">
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-6">
+                            <label class="form-label">Point focal</label>
+                            <input type="text" name="contact_person" class="form-control">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label">Téléphone</label>
+                            <input type="text" name="phone" class="form-control">
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-6">
+                            <label class="form-label">Email</label>
+                            <input type="email" name="email" class="form-control">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label">Site Web</label>
+                            <input type="url" name="website" class="form-control" placeholder="https://...">
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Notes internes</label>
+                        <textarea name="notes" class="form-control" rows="3"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer border-0">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-primary px-4">Enregistrer</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

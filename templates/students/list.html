@@ -1,49 +1,228 @@
 {% extends "base.html" %}
 
-{% block content %}
-<div class="d-flex justify-content-between align-items-center mb-3">
-  <h1 class="h4 mb-0">Étudiants</h1>
-  {% if user.role in ['admin', 'agent'] %}
-  <a class="btn btn-dark btn-sm" href="/students/new">Ajouter</a>
-  {% endif %}
-</div>
+{% block page_title %}Base de Données Étudiants{% endblock %}
 
-<div class="card">
-  <div class="table-responsive">
-    <table class="table table-striped table-hover mb-0 align-middle">
-      <thead>
-        <tr>
-          <th>Nom</th>
-          <th>Téléphone</th>
-          <th>Email</th>
-          <th>Pays</th>
-          <th>Université</th>
-          <th>Statut</th>
-          <th>Agent</th>
-          <th></th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for s in students %}
-        <tr>
-          <td>{{ s.full_name }}</td>
-          <td>{{ s.phone }}</td>
-          <td>{{ s.email }}</td>
-          <td>{{ s.country }}</td>
-          <td>{{ s.university }}</td>
-          <td>{{ s.status_name or '-' }}</td>
-          <td>{{ s.agent_name }}</td>
-          <td class="text-end">
-            <a class="btn btn-outline-secondary btn-sm" href="/students/{{ s.id }}">Voir</a>
-          </td>
-        </tr>
-        {% else %}
-        <tr>
-          <td colspan="8" class="text-center text-muted py-4">Aucun étudiant</td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
+{% block content %}
+<div class="row mb-5 g-4 align-items-center animate-in">
+  <div class="col-12 col-lg-6">
+    <div class="d-flex align-items-center gap-3">
+      <div class="bg-primary text-white p-3 rounded-4 shadow-primary-sm">
+        <i data-lucide="users-2" style="width: 28px; height: 28px;"></i>
+      </div>
+      <div>
+        <h3 class="fw-extrabold mb-1">Dossiers Étudiants</h3>
+        <p class="text-muted smaller mb-0"><span class="fw-bold text-primary">{{ students|length }}</span> étudiants
+          enregistrés dans la base</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-12 col-lg-6">
+    <div class="d-flex flex-wrap justify-content-lg-end gap-2">
+      <form class="d-flex gap-2 flex-grow-1 flex-md-grow-0" method="get">
+        <div class="search-input-premium bg-white border rounded-pill px-3 d-flex align-items-center"
+          style="width: 250px;">
+          <i data-lucide="search" class="text-muted me-2" style="width: 16px;"></i>
+          <input type="text" name="search" class="border-0 bg-transparent py-2 smaller w-100"
+            placeholder="Rechercher..." value="{{ current_search }}" style="outline: none;">
+        </div>
+        <select name="status_id" class="form-select border rounded-pill px-3 smaller" onchange="this.form.submit()"
+          style="width: 160px;">
+          <option value="">Tous les statuts</option>
+          {% for st in statuses %}
+          <option value="{{ st.id }}" {% if current_status_id==st.id %}selected{% endif %}>{{ st.name }}</option>
+          {% endfor %}
+        </select>
+      </form>
+      {% if user.role in ['admin', 'agent'] %}
+      <a class="btn btn-primary rounded-pill px-4 py-2 fw-bold d-flex align-items-center gap-2 shadow-sm"
+        href="/students/new">
+        <i data-lucide="plus" style="width: 18px;"></i>
+        Nouveau Dossier
+      </a>
+      {% endif %}
+    </div>
   </div>
 </div>
+
+<div class="card border-0 shadow-premium overflow-hidden animate-in" style="animation-delay: 0.1s;">
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover mb-0 align-middle">
+        <thead>
+          <tr class="bg-light-soft border-bottom">
+            <th class="ps-4 py-4 text-muted extra-small text-uppercase fw-bold letter-spacing-1">Étudiant & Contact</th>
+            <th class="py-4 text-muted extra-small text-uppercase fw-bold letter-spacing-1">Destination & Formation</th>
+            <th class="py-4 text-muted extra-small text-uppercase fw-bold letter-spacing-1">Suivi Financier</th>
+            <th class="py-4 text-muted extra-small text-uppercase fw-bold letter-spacing-1">Statut Actuel</th>
+            <th class="pe-4 py-4 text-end">Options</th>
+          </tr>
+        </thead>
+        <tbody class="border-top-0">
+          {% for s in students %}
+          <tr class="student-row transition-all" onclick="window.location='/students/{{ s.id }}'"
+            style="cursor: pointer;">
+            <td class="ps-4 py-4">
+              <div class="d-flex align-items-center gap-3">
+                <div
+                  class="avatar-md bg-primary-soft text-primary rounded-4 d-flex align-items-center justify-content-center fw-bold shadow-sm"
+                  style="width: 50px; height: 50px; min-width: 50px; font-size: 1.2rem;">
+                  {{ s.full_name[:1] }}
+                </div>
+                <div>
+                  <div class="fw-bold text-dark fs-6">{{ s.full_name }}</div>
+                  <div class="d-flex align-items-center gap-2 mt-1">
+                    <span class="text-muted smaller d-flex align-items-center gap-1"><i data-lucide="mail"
+                        style="width: 12px;"></i> {{ s.email }}</span>
+                    <span class="text-muted extra-small">•</span>
+                    <span class="text-muted smaller d-flex align-items-center gap-1"><i data-lucide="phone"
+                        style="width: 12px;"></i> {{ s.phone }}</span>
+                  </div>
+                </div>
+              </div>
+            </td>
+            <td class="py-4">
+              <div class="fw-bold text-dark mb-1 d-flex align-items-center gap-2">
+                <i data-lucide="map-pin" class="text-primary opacity-50" style="width: 14px;"></i>
+                {{ s.country }}
+              </div>
+              <div class="smaller text-muted">{{ s.university }}</div>
+              <div class="mt-2">
+                <span class="badge bg-light text-muted border-0 fw-bold px-2 py-1" style="font-size: 0.65rem;">{{
+                  s.study_level }}</span>
+              </div>
+            </td>
+            <td class="py-4">
+              {% if s.total_amount > 0 %}
+              <div class="fw-bold text-dark mb-1">{{ "{:,.0f}".format(s.total_amount).replace(',', ' ') }} <span
+                  class="extra-small opacity-50">{{ s.currency }}</span></div>
+              <div class="progress rounded-pill bg-light" style="height: 6px; width: 100px;">
+                <div class="progress-bar bg-success rounded-pill" style="width: 45%"></div>
+              </div>
+              {% else %}
+              <span class="text-muted extra-small italic">Budget non défini</span>
+              {% endif %}
+            </td>
+            <td class="py-4">
+              <div
+                class="d-inline-flex align-items-center gap-2 px-3 py-1 rounded-pill {% if s.status_name == 'Accepté' %}bg-success-soft text-success{% elif s.status_name == 'Refusé' %}bg-danger-soft text-danger{% else %}bg-primary-soft text-primary{% endif %} smaller fw-bold">
+                <span class="status-dot"></span>
+                {{ s.status_name or 'Dossier Initial' }}
+              </div>
+              <div class="extra-small text-muted mt-2 ps-1">Géré par <b>{{ s.agent_name }}</b></div>
+            </td>
+            <td class="pe-4 py-4 text-end">
+              <div class="action-buttons" onclick="event.stopPropagation()">
+                <a class="btn-action bg-light text-muted" href="/students/{{ s.id }}" title="Voir Dossier">
+                  <i data-lucide="external-link" style="width: 18px;"></i>
+                </a>
+                <button type="button" class="btn-action bg-light text-muted ms-1" data-bs-toggle="dropdown">
+                  <i data-lucide="more-horizontal" style="width: 18px;"></i>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end shadow border-0 p-2 rounded-4 animate-in">
+                  <li><a class="dropdown-item py-2 rounded-3 d-flex align-items-center gap-2 fw-medium"
+                      href="/students/{{ s.id }}/edit"><i data-lucide="edit-3" class="text-info"
+                        style="width: 16px;"></i> Modifier</a></li>
+                  <li><a class="dropdown-item py-2 rounded-3 d-flex align-items-center gap-2 fw-medium"
+                      href="/payments/student/{{ s.id }}"><i data-lucide="credit-card" class="text-success"
+                        style="width: 16px;"></i> Historique Financier</a></li>
+                  {% if user.role == 'admin' %}
+                  <li>
+                    <hr class="dropdown-divider opacity-10">
+                  </li>
+                  <li>
+                    <form action="/students/{{ s.id }}/delete" method="post"
+                      onsubmit="return confirm('Confirmer la suppression définitive du dossier ?');">
+                      <button type="submit"
+                        class="dropdown-item py-2 rounded-3 d-flex align-items-center gap-2 text-danger fw-medium"><i
+                          data-lucide="trash-2" style="width: 16px;"></i> Supprimer</button>
+                    </form>
+                  </li>
+                  {% endif %}
+                </ul>
+              </div>
+            </td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="5" class="text-center py-5">
+              <div class="py-5">
+                <div class="bg-light rounded-circle d-flex align-items-center justify-content-center mx-auto mb-4"
+                  style="width: 80px; height: 80px;">
+                  <i data-lucide="user-x" class="text-muted opacity-20" style="width: 40px; height: 40px;"></i>
+                </div>
+                <h5 class="text-dark fw-bold">Aucun résultat</h5>
+                <p class="text-muted smaller">Nous n'avons trouvé aucun dossier correspondant à vos critères.</p>
+                <a href="/students" class="btn btn-outline-primary btn-sm rounded-pill px-4 mt-2">Voir tous les
+                  étudiants</a>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<style>
+  .fw-extrabold {
+    font-weight: 800;
+  }
+
+  .fs-6 {
+    font-size: 1rem !important;
+  }
+
+  .bg-light-soft {
+    background-color: #fbfcfd;
+  }
+
+  .letter-spacing-1 {
+    letter-spacing: 1px;
+  }
+
+  .extra-small {
+    font-size: 0.65rem;
+  }
+
+  .shadow-primary-sm {
+    box-shadow: 0 10px 15px -3px rgba(79, 70, 229, 0.2);
+  }
+
+  .student-row:hover {
+    background-color: #f8fafc !important;
+  }
+
+  .status-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background-color: currentColor;
+    display: inline-block;
+  }
+
+  .btn-action {
+    width: 36px;
+    height: 36px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 10px;
+    border: none;
+    transition: all 0.2s ease;
+    text-decoration: none;
+  }
+
+  .btn-action:hover {
+    background-color: #fff !important;
+    color: var(--primary) !important;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    transform: translateY(-2px);
+  }
+
+  .dropdown-item:hover {
+    background-color: #f8fafc;
+  }
+</style>
 {% endblock %}

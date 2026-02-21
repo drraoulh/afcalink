@@ -1,6 +1,275 @@
 {% extends "base.html" %}
 
+{% block page_title %}Gestion des Prospects{% endblock %}
+
 {% block content %}
-<h1 class="h4">Prospects</h1>
-<p class="text-muted mb-0">Placeholder</p>
+<div class="row mb-5 g-4 align-items-center animate-in">
+    <div class="col-12 col-md-6">
+        <div class="d-flex align-items-center gap-3">
+            <div class="bg-info text-white p-3 rounded-4 shadow-info-sm">
+                <i data-lucide="target" style="width: 28px; height: 28px;"></i>
+            </div>
+            <div>
+                <h3 class="fw-extrabold mb-1">Pipeline Prospects</h3>
+                <p class="text-muted smaller mb-0">Suivez vos opportunités et convertissez-les en inscriptions</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-12 col-md-6 d-flex justify-content-md-end gap-3 align-items-center">
+        <form class="d-none d-md-block" method="get">
+            <div class="search-input-premium bg-white border border-light rounded-pill px-3 d-flex align-items-center shadow-sm"
+                style="width: 220px;">
+                <i data-lucide="search" class="text-muted me-2" style="width: 14px;"></i>
+                <input type="text" name="search" class="border-0 bg-transparent py-2 smaller w-100"
+                    placeholder="Filtrer..." value="{{ current_search }}" style="outline: none;">
+            </div>
+        </form>
+        <button class="btn btn-primary rounded-pill px-4 py-2 fw-bold d-flex align-items-center gap-2 shadow-sm"
+            data-bs-toggle="modal" data-bs-target="#newProspectModal">
+            <i data-lucide="user-plus" style="width: 18px;"></i>
+            Nouveau Contact
+        </button>
+    </div>
+</div>
+
+<div class="row g-4 animate-in" style="animation-delay: 0.1s;">
+    {% for p in prospects %}
+    <div class="col-12 col-md-6 col-lg-4">
+        <div class="card border-0 shadow-premium h-100 prospect-card overflow-hidden">
+            <!-- Source Badge Overlay -->
+            <div class="position-absolute top-0 end-0 mt-3 me-3 d-flex flex-column align-items-end gap-2">
+                <span
+                    class="badge bg-white text-dark shadow-sm border-0 rounded-pill px-3 py-2 smaller fw-bold opacity-75">
+                    {{ p.source or 'Direct' }}
+                </span>
+                {% if not p.agent_name %}
+                <span class="badge bg-warning text-dark border-0 rounded-pill px-3 py-1 extra-small fw-bold shadow-sm">
+                    <i data-lucide="globe" style="width: 10px;" class="me-1"></i> DISPONIBLE (SÉCRÉTARIAT)
+                </span>
+                {% endif %}
+            </div>
+
+            <div class="card-body p-4">
+                <div class="d-flex align-items-center gap-3 mb-4">
+                    <div class="avatar-lg bg-info-soft text-info rounded-4 d-flex align-items-center justify-content-center fw-bold fs-4"
+                        style="width: 56px; height: 56px; min-width: 56px;">
+                        {{ p.full_name[:1] }}
+                    </div>
+                    <div class="overflow-hidden">
+                        <h6 class="fw-bold text-dark mb-1 text-truncate">{{ p.full_name }}</h6>
+                        <div class="text-muted extra-small d-flex align-items-center gap-1">
+                            <i data-lucide="calendar" style="width: 10px;"></i> Ajouté le {{ p.created_at[:10] }}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="contact-info bg-light-soft rounded-4 p-3 mb-4">
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        <i data-lucide="phone" class="text-primary opacity-50" style="width: 14px;"></i>
+                        <span class="smaller fw-medium text-dark">{{ p.phone }}</span>
+                    </div>
+                    {% if p.email %}
+                    <div class="d-flex align-items-center gap-2">
+                        <i data-lucide="mail" class="text-primary opacity-50" style="width: 14px;"></i>
+                        <span class="smaller fw-medium text-dark text-truncate">{{ p.email }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <div class="mb-4">
+                    <label class="text-muted extra-small text-uppercase fw-bold letter-spacing-1 d-block mb-2">Pays
+                        d'intérêt</label>
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="bg-primary text-white rounded-circle p-1 d-flex align-items-center justify-content-center"
+                            style="width: 20px; height: 20px;">
+                            <i data-lucide="map-pin" style="width: 10px; height: 10px;"></i>
+                        </div>
+                        <span class="fw-bold text-dark">{{ p.country_interest or 'Non défini' }}</span>
+                    </div>
+                </div>
+
+                {% if p.notes %}
+                <div
+                    class="notes-box position-relative p-3 rounded-4 border-start border-4 border-info bg-light-soft mb-4">
+                    <p class="smaller text-muted mb-0 italic">"{{ p.notes }}"</p>
+                </div>
+                {% endif %}
+
+                <div class="d-flex gap-2 mt-auto pt-2">
+                    <form action="/prospects/{{ p.id }}/convert" method="post" class="flex-grow-1">
+                        <button type="submit"
+                            class="btn btn-primary-soft w-100 rounded-pill py-2 smaller fw-bold transition-all hover-primary-btn">
+                            <i data-lucide="user-check" class="me-1" style="width: 14px;"></i> Inscrire
+                        </button>
+                    </form>
+                    <div class="dropdown">
+                        <button class="btn btn-light rounded-circle p-2" data-bs-toggle="dropdown"
+                            style="width: 38px; height: 38px;">
+                            <i data-lucide="more-vertical" style="width: 18px;"></i>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end shadow border-0 p-2 rounded-4">
+                            {% if user.role == 'admin' %}
+                            <li>
+                                <form action="/prospects/{{ p.id }}/delete" method="post"
+                                    onsubmit="return confirm('Supprimer ce prospect ?')">
+                                    <button type="submit"
+                                        class="dropdown-item py-2 rounded-3 d-flex align-items-center gap-2 text-danger fw-medium">
+                                        <i data-lucide="trash-2" style="width: 16px;"></i> Supprimer
+                                    </button>
+                                </form>
+                            </li>
+                            {% endif %}
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="col-12 text-center py-5">
+        <div class="py-5">
+            <div class="bg-light rounded-circle d-flex align-items-center justify-content-center mx-auto mb-4"
+                style="width: 100px; height: 100px;">
+                <i data-lucide="users-2" class="text-muted opacity-20" style="width: 50px; height: 50px;"></i>
+            </div>
+            <h4 class="text-dark fw-bold">Pipeline Vide</h4>
+            <p class="text-muted smaller mb-4">Vous n'avez aucun prospect enregistré pour le moment.</p>
+            <button class="btn btn-primary rounded-pill px-5 py-3 fw-bold shadow-sm" data-bs-toggle="modal"
+                data-bs-target="#newProspectModal">
+                Ajouter mon premier prospect
+            </button>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<style>
+    .fw-extrabold {
+        font-weight: 800;
+    }
+
+    .letter-spacing-1 {
+        letter-spacing: 1.2px;
+    }
+
+    .extra-small {
+        font-size: 0.65rem;
+    }
+
+    .fs-4 {
+        font-size: 1.5rem !important;
+    }
+
+    .bg-light-soft {
+        background-color: #f8fafc;
+    }
+
+    .shadow-info-sm {
+        box-shadow: 0 10px 15px -3px rgba(14, 165, 233, 0.3);
+    }
+
+    .prospect-card {
+        transition: all 0.3s ease;
+    }
+
+    .prospect-card:hover {
+        transform: translateY(-8px);
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.08) !important;
+    }
+
+    .btn-primary-soft {
+        background-color: rgba(79, 70, 229, 0.08);
+        color: var(--primary);
+        border: none;
+    }
+
+    .hover-primary-btn:hover {
+        background-color: var(--primary);
+        color: white !important;
+    }
+
+    .italic {
+        font-style: italic;
+    }
+</style>
+{% endblock %}
+
+{% block modals %}
+<div class="modal fade" id="newProspectModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-premium rounded-4 overflow-hidden">
+            <div class="modal-header bg-dark text-white p-4 border-0">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="bg-primary p-2 rounded-3">
+                        <i data-lucide="user-plus" style="width: 20px; height: 20px;"></i>
+                    </div>
+                    <div>
+                        <h5 class="modal-title fw-bold mb-0">Nouveau Prospect</h5>
+                        <p class="extra-small opacity-50 mb-0">Saisie des informations de contact</p>
+                    </div>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" action="/prospects/new">
+                <div class="modal-body p-4">
+                    <div class="mb-4">
+                        <label class="form-label smaller fw-bold text-uppercase text-muted letter-spacing-1">Nom
+                            Complet</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light border-0"><i data-lucide="user"
+                                    style="width: 16px;"></i></span>
+                            <input type="text" name="full_name" class="form-control bg-light border-0 py-2" required
+                                placeholder="Ex: Jean Dupont">
+                        </div>
+                    </div>
+                    <div class="row g-3 mb-4">
+                        <div class="col-12 col-md-6">
+                            <label
+                                class="form-label smaller fw-bold text-uppercase text-muted letter-spacing-1">Téléphone</label>
+                            <input type="text" name="phone" class="form-control bg-light border-0 py-2" required
+                                placeholder="+237...">
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label
+                                class="form-label smaller fw-bold text-uppercase text-muted letter-spacing-1">Email</label>
+                            <input type="email" name="email" class="form-control bg-light border-0 py-2"
+                                placeholder="exemple@mail.com">
+                        </div>
+                    </div>
+                    <div class="row g-3 mb-4">
+                        <div class="col-12 col-md-6">
+                            <label class="form-label smaller fw-bold text-uppercase text-muted letter-spacing-1">Pays
+                                cible</label>
+                            <input type="text" name="country_interest" class="form-control bg-light border-0 py-2"
+                                placeholder="Ex: Chine...">
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label
+                                class="form-label smaller fw-bold text-uppercase text-muted letter-spacing-1">Source</label>
+                            <select name="source" class="form-select bg-light border-0 py-2">
+                                <option value="Visite Bureau">Visite Bureau (Réception)</option>
+                                <option value="Facebook">Lien Facebook</option>
+                                <option value="WhatsApp">Contact WhatsApp</option>
+                                <option value="Recommandation">Recommandation</option>
+                                <option value="Autre">Autre</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label smaller fw-bold text-uppercase text-muted letter-spacing-1">Notes /
+                            Besoins</label>
+                        <textarea name="notes" class="form-control bg-light border-0 py-2" rows="3"
+                            placeholder="Quels sont les besoins spécifiques ?"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer border-0 p-4 pt-0">
+                    <button type="button" class="btn btn-light rounded-pill px-4"
+                        data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-primary rounded-pill px-5 fw-bold shadow-sm">Créer le
+                        Contact</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 {% endblock %}

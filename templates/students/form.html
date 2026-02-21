@@ -1,67 +1,132 @@
 {% extends "base.html" %}
 
+{% block page_title %}{% if student %}Modifier {{ student.full_name }}{% else %}Nouveau Étudiant{% endif %}{% endblock
+%}
+
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-3">
-  <h1 class="h4 mb-0">{% if student %}Modifier étudiant{% else %}Ajouter étudiant{% endif %}</h1>
-  <a class="btn btn-outline-secondary btn-sm" href="/students">Retour</a>
+<div class="row mb-4">
+  <div class="col-12 col-lg-8 mx-auto d-flex justify-content-between align-items-center">
+    <div>
+      <h3 class="fw-bold mb-0">{% if student %}Modifier Dossier{% else %}Nouvelle Inscription{% endif %}</h3>
+      <p class="text-muted smaller mb-0">Remplissez les informations essentielles du candidat</p>
+    </div>
+    <a class="btn btn-light btn-sm" href="/students">Annuler</a>
+  </div>
 </div>
 
-<div class="card">
-  <div class="card-body">
-    <form method="post" action="{% if student %}/students/{{ student.id }}/edit{% else %}/students/new{% endif %}">
-      <div class="row g-3">
-        <div class="col-12 col-md-6">
-          <label class="form-label">Nom complet</label>
-          <input class="form-control" name="full_name" required value="{{ student.full_name if student else '' }}" />
-        </div>
-        <div class="col-12 col-md-6">
-          <label class="form-label">Téléphone</label>
-          <input class="form-control" name="phone" required value="{{ student.phone if student else '' }}" />
-        </div>
-        <div class="col-12 col-md-6">
-          <label class="form-label">Email</label>
-          <input class="form-control" type="email" name="email" required value="{{ student.email if student else '' }}" />
-        </div>
-        <div class="col-12 col-md-6">
-          <label class="form-label">Pays</label>
-          <input class="form-control" name="country" required value="{{ student.country if student else '' }}" />
-        </div>
-        <div class="col-12 col-md-6">
-          <label class="form-label">Niveau d’étude</label>
-          <input class="form-control" name="study_level" required value="{{ student.study_level if student else '' }}" />
-        </div>
-        <div class="col-12 col-md-6">
-          <label class="form-label">Programme choisi</label>
-          <input class="form-control" name="program_choice" required value="{{ student.program_choice if student else '' }}" />
-        </div>
-        <div class="col-12 col-md-6">
-          <label class="form-label">Université</label>
-          <input class="form-control" name="university" required value="{{ student.university if student else '' }}" />
-        </div>
-        <div class="col-12 col-md-6">
-          <label class="form-label">Agent responsable</label>
-          <input class="form-control" name="agent_name" required value="{{ student.agent_name if student else '' }}" />
-        </div>
-        <div class="col-12 col-md-6">
-          <label class="form-label">Statut dossier</label>
-          <select class="form-select" name="status_id">
-            <option value="">-</option>
-            {% for st in statuses %}
-            <option value="{{ st.id }}" {% if student and student.status_id == st.id %}selected{% endif %}>{{ st.name }}</option>
-            {% endfor %}
-          </select>
-        </div>
-        <div class="col-12">
-          <label class="form-label">Notes internes</label>
-          <textarea class="form-control" name="notes" rows="4">{{ student.notes if student else '' }}</textarea>
-        </div>
-      </div>
+<div class="row">
+  <div class="col-12 col-lg-8 mx-auto">
+    <div class="card shadow-sm border-0">
+      <div class="card-body p-4 p-md-5">
+        <form method="post" action="{% if student %}/students/{{ student.id }}/edit{% else %}/students/new{% endif %}">
+          <div class="row g-4">
+            <!-- Section Title -->
+            <div class="col-12">
+              <h6 class="text-primary fw-bold text-uppercase smaller border-bottom pb-2">Identité & Contact</h6>
+            </div>
 
-      <div class="mt-4 d-flex gap-2">
-        <button class="btn btn-dark" type="submit">Enregistrer</button>
-        <a class="btn btn-outline-secondary" href="/students">Annuler</a>
+            <div class="col-12">
+              <label class="form-label">Nom Complet du Candidat</label>
+              <div class="input-group">
+                <span class="input-group-text bg-light border-end-0"><i data-lucide="user"
+                    style="width: 16px;"></i></span>
+                <input class="form-control border-start-0" name="full_name" required
+                  value="{{ student.full_name if student else '' }}" placeholder="Ex: Jean Dupont" />
+              </div>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label">Téléphone</label>
+              <div class="input-group">
+                <span class="input-group-text bg-light border-end-0"><i data-lucide="phone"
+                    style="width: 16px;"></i></span>
+                <input class="form-control border-start-0" name="phone" required
+                  value="{{ student.phone if student else '' }}" placeholder="+237 ..." />
+              </div>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label">Email</label>
+              <div class="input-group">
+                <span class="input-group-text bg-light border-end-0"><i data-lucide="mail"
+                    style="width: 16px;"></i></span>
+                <input class="form-control border-start-0" type="email" name="email" required
+                  value="{{ student.email if student else '' }}" placeholder="email@exemple.com" />
+              </div>
+            </div>
+
+            <!-- Migration Details -->
+            <div class="col-12 mt-5">
+              <h6 class="text-primary fw-bold text-uppercase smaller border-bottom pb-2">Détails de l'Admission</h6>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label">Pays de Destination</label>
+              <select class="form-select" name="country" required>
+                <option value="" disabled {% if not student %}selected{% endif %}>Choisir un pays...</option>
+                <option value="Chine" {% if student and student.country=='Chine' %}selected{% endif %}>Chine</option>
+                <option value="Canada" {% if student and student.country=='Canada' %}selected{% endif %}>Canada</option>
+                <option value="France" {% if student and student.country=='France' %}selected{% endif %}>France</option>
+                <option value="Belgique" {% if student and student.country=='Belgique' %}selected{% endif %}>Belgique
+                </option>
+                <option value="Autre" {% if student and student.country not in ['Chine', 'Canada' , 'France'
+                  , 'Belgique' ] and student %}selected{% endif %}>Autre</option>
+              </select>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label">Université Ciblée</label>
+              <input class="form-control" name="university" required value="{{ student.university if student else '' }}"
+                placeholder="Nom de l'établissement" />
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label">Niveau d'Étude Actuel</label>
+              <input class="form-control" name="study_level" required
+                value="{{ student.study_level if student else '' }}" placeholder="Ex: Licence 3, Master ..." />
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label">Programme Souhaité</label>
+              <input class="form-control" name="program_choice" required
+                value="{{ student.program_choice if student else '' }}" placeholder="Ex: Génie Civil, Management ..." />
+            </div>
+
+            <!-- Assignment -->
+            <div class="col-md-6">
+              <label class="form-label">Statut Actuel</label>
+              <select class="form-select" name="status_id">
+                <option value="">Non défini</option>
+                {% for st in statuses %}
+                <option value="{{ st.id }}" {% if student and student.status_id==st.id %}selected{% endif %}>{{ st.name
+                  }}</option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label">Agent Assigné</label>
+              <input class="form-control" name="agent_name" required
+                value="{{ student.agent_name if student else (user.full_name if user else '') }}" />
+            </div>
+
+            <div class="col-12">
+              <label class="form-label">Notes Internes / Observations</label>
+              <textarea class="form-control" name="notes" rows="3"
+                placeholder="Particularités du dossier, documents manquants, etc...">{{ student.notes if student else '' }}</textarea>
+            </div>
+          </div>
+
+          <div class="mt-5 pt-3 border-top d-flex gap-3">
+            <button class="btn btn-primary px-5 py-2 fw-bold" type="submit">
+              <i data-lucide="check" class="me-2" style="width: 18px;"></i>
+              Enregistrer le Dossier
+            </button>
+            <a class="btn btn-light px-4 py-2" href="/students">Annuler</a>
+          </div>
+        </form>
       </div>
-    </form>
+    </div>
   </div>
 </div>
 {% endblock %}

@@ -20,6 +20,10 @@ async def get_current_user(request: Request, db=Depends(db_dep)):
     if user.get("active") in (0, False):
         request.session.clear()
         raise HTTPException(status_code=401, detail="Not authenticated")
+    
+    from app.data.notifications import count_unread
+    user["unread_notifications"] = await count_unread(db, user["id"])
+    
     return user
 
 

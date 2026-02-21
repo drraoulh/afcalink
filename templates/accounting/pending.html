@@ -1,0 +1,172 @@
+{% extends "base.html" %}
+
+{% block page_title %}Validation des Paiements{% endblock %}
+
+{% block content %}
+<div class="row g-4 mb-5 animate-in">
+    <div class="col-12">
+        <div class="card border-0 shadow-premium p-4 bg-success text-white overflow-hidden position-relative"
+            style="border-radius: 24px;">
+            <div class="position-absolute top-0 end-0 p-5 opacity-10">
+                <i data-lucide="shield-check" style="width: 150px; height: 150px;"></i>
+            </div>
+            <div class="position-relative">
+                <h3 class="fw-extrabold mb-1">Espace Comptabilité</h3>
+                <p class="opacity-75 mb-0">Validez les encaissements en attente pour mettre à jour les comptes étudiants
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 mb-5">
+    <div class="col-12">
+        <div class="card border-0 shadow-premium p-4">
+            <div class="d-flex flex-wrap justify-content-between align-items-center mb-5 gap-3">
+                <h5 class="fw-bold mb-0">Flux des Paiements à Confirmer</h5>
+
+                <form class="d-flex flex-wrap gap-2" method="get">
+                    <select name="agent_id" class="form-select form-select-sm border-0 bg-light rounded-pill px-3"
+                        style="width: 180px;" onchange="this.form.submit()">
+                        <option value="">Tous les agents</option>
+                        {% for u in users_list %}
+                        {% if u.role == 'agent' %}
+                        <option value="{{ u.id }}" {% if current_agent_id|string==u.id|string %}selected{% endif %}>{{
+                            u.full_name }}</option>
+                        {% endif %}
+                        {% endfor %}
+                    </select>
+                    <input type="date" name="filter_date"
+                        class="form-control form-control-sm border-0 bg-light rounded-pill px-3" style="width: 150px;"
+                        value="{{ current_filter_date or '' }}" onchange="this.form.submit()">
+                    {% if current_agent_id or current_filter_date %}
+                    <a href="/accounting/pending" class="btn btn-sm btn-light rounded-circle shadow-sm">
+                        <i data-lucide="x" style="width: 14px;"></i>
+                    </a>
+                    {% endif %}
+                </form>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="bg-light-soft">
+                        <tr>
+                            <th class="ps-4 py-3 text-muted extra-small text-uppercase fw-bold letter-spacing-1">
+                                Étudiant & Réf</th>
+                            <th class="py-3 text-muted extra-small text-uppercase fw-bold letter-spacing-1">Agent
+                                Émetteur</th>
+                            <th class="py-3 text-muted extra-small text-uppercase fw-bold letter-spacing-1">Montant &
+                                Mode</th>
+                            <th class="py-3 text-muted extra-small text-uppercase fw-bold letter-spacing-1 text-center">
+                                Justificatif</th>
+                            <th class="pe-4 py-3 text-end">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for p in payments %}
+                        <tr class="transition-all">
+                            <td class="ps-4 py-4">
+                                <div class="fw-bold text-dark">{{ p.student_name }}</div>
+                                <div class="extra-small text-muted d-flex align-items-center gap-1">
+                                    <i data-lucide="calendar" style="width: 12px;"></i> {{ p.payment_date }} · #REC-{{
+                                    p.id }}
+                                </div>
+                            </td>
+                            <td class="py-4">
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="avatar-xs bg-primary-soft text-primary rounded-circle d-flex align-items-center justify-content-center fw-bold"
+                                        style="width: 24px; height: 24px;">{{ p.agent_name[:1] }}</div>
+                                    <span class="smaller fw-bold text-muted">{{ p.agent_name }}</span>
+                                </div>
+                            </td>
+                            <td class="py-4">
+                                <div class="h6 fw-extrabold text-primary mb-1">{{
+                                    "{:,.0f}".format(p.amount).replace(',', ' ') }} {{ p.currency }}</div>
+                                <div class="badge bg-light text-dark fw-bold border-0">{{ p.payment_mode }}</div>
+                            </td>
+                            <td class="py-4 text-center">
+                                {% if p.receipt_stored_path %}
+                                <a href="/payments/receipts/{{ p.id }}" class="btn-action bg-primary-soft text-primary"
+                                    title="Voir le reçu">
+                                    <i data-lucide="file-text" style="width: 18px;"></i>
+                                </a>
+                                {% else %}
+                                <span class="text-muted extra-small italic">Aucun</span>
+                                {% endif %}
+                            </td>
+                            <td class="pe-4 py-4 text-end">
+                                <form action="/payments/confirm/{{ p.id }}" method="post"
+                                    onsubmit="return confirm('Valider définitivement ce paiement ?')" class="d-inline">
+                                    <button type="submit"
+                                        class="btn btn-success rounded-pill px-4 py-2 fw-bold d-flex align-items-center gap-2 shadow-success-sm mx-auto mx-md-0 ms-md-auto">
+                                        <i data-lucide="check-circle" style="width: 18px;"></i> Confirmer
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="5" class="text-center py-5">
+                                <div class="py-5">
+                                    <div class="bg-light rounded-circle d-flex align-items-center justify-content-center mx-auto mb-4"
+                                        style="width: 80px; height: 80px;">
+                                        <i data-lucide="check-check" class="text-success opacity-50"
+                                            style="width: 40px; height: 40px;"></i>
+                                    </div>
+                                    <h5 class="fw-bold text-dark">Tout est à jour !</h5>
+                                    <p class="text-muted smaller">Aucun paiement en attente de validation pour le
+                                        moment.</p>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .fw-extrabold {
+        font-weight: 800;
+    }
+
+    .extra-small {
+        font-size: 0.65rem;
+    }
+
+    .letter-spacing-1 {
+        letter-spacing: 1.1px;
+    }
+
+    .bg-light-soft {
+        background-color: #f8fafc;
+    }
+
+    .btn-action {
+        width: 34px;
+        height: 34px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 10px;
+        transition: all 0.2s;
+        border: none;
+    }
+
+    .btn-action:hover {
+        transform: scale(1.1);
+        background-color: var(--bs-primary);
+        color: white !important;
+    }
+
+    .shadow-success-sm {
+        box-shadow: 0 4px 14px 0 rgba(16, 185, 129, 0.39);
+    }
+
+    .italic {
+        font-style: italic;
+    }
+</style>
+{% endblock %}

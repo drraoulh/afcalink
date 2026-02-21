@@ -19,8 +19,10 @@ from app.data.students import (
     get_student,
     list_student_history,
     list_students,
+    set_student_status,
     update_student,
 )
+from app.flash import flash_success
 from app.storage import save_upload
 from app.templating import templates
 
@@ -28,16 +30,32 @@ router = APIRouter(prefix="/students", tags=["students"])
 
 
 @router.get("")
-async def students_list(request: Request, user=Depends(require_role("admin", "agent", "accountant")), db=Depends(db_dep)):
-    students = await list_students(db)
+async def students_list(
+    request: Request,
+    user=Depends(require_role("admin", "agent", "secretary", "admission_director")),
+    db=Depends(db_dep),
+    search: str | None = None,
+    status_id: int | None = None
+):
+    agent_name = user.get("full_name") if user.get("role") == "agent" else None
+    students = await list_students(db, agent_name=agent_name, search=search, status_id=status_id)
+    statuses = await list_statuses(db)
+    
     return templates.TemplateResponse(
         "students/list.html",
-        {"request": request, "user": user, "students": students},
+        {
+            "request": request,
+            "user": user,
+            "students": students,
+            "statuses": statuses,
+            "current_search": search or "",
+            "current_status_id": status_id
+        },
     )
 
 
 @router.get("/new")
-async def student_new_get(request: Request, user=Depends(require_role("admin", "agent")), db=Depends(db_dep)):
+async def student_new_get(request: Request, user=Depends(require_role("admin", "agent", "admission_director")), db=Depends(db_dep)):
     statuses = await list_statuses(db)
     return templates.TemplateResponse(
         "students/form.html",
@@ -48,7 +66,7 @@ async def student_new_get(request: Request, user=Depends(require_role("admin", "
 @router.post("/new")
 async def student_new_post(
     request: Request,
-    user=Depends(require_role("admin", "agent")),
+    user=Depends(require_role("admin", "agent", "admission_director")),
     full_name: str = Form(...),
     phone: str = Form(...),
     email: str = Form(...),
@@ -61,6 +79,9 @@ async def student_new_post(
     notes: str = Form(""),
     db=Depends(db_dep),
 ):
+    if user.get("role") == "agent":
+        agent_name = user.get("full_name")
+
     sid = int(status_id) if status_id else None
     changed_by = user.get("id") if "id" in user else None
     await create_student(
@@ -77,31 +98,62 @@ async def student_new_post(
         notes=notes,
         changed_by_user_id=changed_by,
     )
+    flash_success(request, "Étudiant créé avec succès")
     return RedirectResponse(url="/students", status_code=303)
 
 
 @router.get("/{student_id}")
-async def student_view(request: Request, student_id: int, user=Depends(require_role("admin", "agent", "accountant")), db=Depends(db_dep)):
+async def student_view(request: Request, student_id: int, user=Depends(require_role("admin", "agent", "secretary", "admission_director")), db=Depends(db_dep)):
     student = await get_student(db, student_id)
     if not student:
         return RedirectResponse(url="/students", status_code=303)
+    if user.get("role") == "agent" and student.get("agent_name") != user.get("full_name"):
+        raise HTTPException(status_code=403, detail="Forbidden")
     history = await list_student_history(db, student_id)
     documents = await list_student_documents(db, student_id)
+    statuses = await list_statuses(db)
     return templates.TemplateResponse(
         "students/view.html",
-        {"request": request, "user": user, "student": student, "history": history, "documents": documents},
+        {"request": request, "user": user, "student": student, "history": history, "documents": documents, "statuses": statuses},
     )
+
+
+@router.post("/{student_id}/status")
+async def student_status_post(
+    request: Request,
+    student_id: int,
+    user=Depends(require_role("admin", "agent", "admission_director")),
+    status_id: str = Form(""),
+    db=Depends(db_dep),
+):
+    student = await get_student(db, student_id)
+    if not student:
+        return RedirectResponse(url="/students", status_code=303)
+    if user.get("role") == "agent" and student.get("agent_name") != user.get("full_name"):
+        raise HTTPException(status_code=403, detail="Forbidden")
+
+    to_status_id = int(status_id) if status_id else None
+    changed_by = user.get("id") if "id" in user else None
+    await set_student_status(db, student_id=student_id, to_status_id=to_status_id, changed_by_user_id=changed_by)
+    flash_success(request, "Statut mis à jour")
+    return RedirectResponse(url=f"/students/{student_id}", status_code=303)
 
 
 @router.post("/{student_id}/documents")
 async def student_document_upload(
     request: Request,
     student_id: int,
-    user=Depends(require_role("admin", "agent", "accountant")),
+    user=Depends(require_role("admin", "agent", "secretary", "admission_director")),
     doc_type: str = Form(...),
     file: UploadFile = File(...),
     db=Depends(db_dep),
 ):
+    student = await get_student(db, student_id)
+    if not student:
+        return RedirectResponse(url="/students", status_code=303)
+    if user.get("role") == "agent" and student.get("agent_name") != user.get("full_name"):
+        raise HTTPException(status_code=403, detail="Forbidden")
+
     if not file:
         raise HTTPException(status_code=400, detail="Missing file")
 
@@ -140,38 +192,80 @@ async def student_document_upload(
         size_bytes=size,
         uploaded_by_user_id=uploaded_by,
     )
+    flash_success(request, "Document uploadé avec succès")
     return RedirectResponse(url=f"/students/{student_id}", status_code=303)
 
 
 @router.get("/documents/{document_id}/download")
-async def student_document_download(document_id: int, user=Depends(require_role("admin", "agent", "accountant")), db=Depends(db_dep)):
+async def student_document_download(document_id: int, user=Depends(require_role("admin", "agent", "secretary", "admission_director")), db=Depends(db_dep)):
     doc = await get_student_document(db, document_id)
     if not doc:
         raise HTTPException(status_code=404, detail="Not found")
+    student = await get_student(db, int(doc["student_id"]))
+    if not student:
+        raise HTTPException(status_code=404, detail="Not found")
+    if user.get("role") == "agent" and student.get("agent_name") != user.get("full_name"):
+        raise HTTPException(status_code=403, detail="Forbidden")
     path = Path(doc["stored_path"])
     if not path.exists():
         raise HTTPException(status_code=404, detail="File missing")
     return FileResponse(path, filename=doc["original_filename"], media_type="application/octet-stream")
 
 
-@router.post("/documents/{document_id}/delete")
-async def student_document_delete(document_id: int, user=Depends(require_role("admin", "agent")), db=Depends(db_dep)):
+@router.get("/documents/{document_id}/preview")
+async def student_document_preview(document_id: int, user=Depends(require_role("admin", "agent", "secretary", "admission_director")), db=Depends(db_dep)):
     doc = await get_student_document(db, document_id)
     if not doc:
         raise HTTPException(status_code=404, detail="Not found")
+    student_id = int(doc["student_id"])
+    student = await get_student(db, student_id)
+    if not student:
+        raise HTTPException(status_code=404, detail="Not found")
+    if user.get("role") == "agent" and student.get("agent_name") != user.get("full_name"):
+        raise HTTPException(status_code=403, detail="Forbidden")
+    
+    path = Path(doc["stored_path"])
+    if not path.exists():
+        raise HTTPException(status_code=404, detail="File missing")
+        
+    ext = path.suffix.lower()
+    media_type = "application/octet-stream"
+    if ext == ".pdf":
+        media_type = "application/pdf"
+    elif ext in [".jpg", ".jpeg"]:
+        media_type = "image/jpeg"
+    elif ext == ".png":
+        media_type = "image/png"
+        
+    return FileResponse(path, media_type=media_type)
+
+
+@router.post("/documents/{document_id}/delete")
+async def student_document_delete(request: Request, document_id: int, user=Depends(require_role("admin", "admission_director")), db=Depends(db_dep)):
+    doc = await get_student_document(db, document_id)
+    if not doc:
+        raise HTTPException(status_code=404, detail="Not found")
+    student = await get_student(db, int(doc["student_id"]))
+    if not student:
+        raise HTTPException(status_code=404, detail="Not found")
+    if user.get("role") == "agent" and student.get("agent_name") != user.get("full_name"):
+        raise HTTPException(status_code=403, detail="Forbidden")
     try:
         Path(doc["stored_path"]).unlink(missing_ok=True)
     except Exception:
         pass
     await delete_student_document(db, document_id)
+    flash_success(request, "Document supprimé")
     return RedirectResponse(url=f"/students/{doc['student_id']}", status_code=303)
 
 
 @router.get("/{student_id}/edit")
-async def student_edit_get(request: Request, student_id: int, user=Depends(require_role("admin", "agent")), db=Depends(db_dep)):
+async def student_edit_get(request: Request, student_id: int, user=Depends(require_role("admin", "admission_director")), db=Depends(db_dep)):
     student = await get_student(db, student_id)
     if not student:
         return RedirectResponse(url="/students", status_code=303)
+    if user.get("role") == "agent" and student.get("agent_name") != user.get("full_name"):
+        raise HTTPException(status_code=403, detail="Forbidden")
     statuses = await list_statuses(db)
     return templates.TemplateResponse(
         "students/form.html",
@@ -183,7 +277,7 @@ async def student_edit_get(request: Request, student_id: int, user=Depends(requi
 async def student_edit_post(
     request: Request,
     student_id: int,
-    user=Depends(require_role("admin", "agent")),
+    user=Depends(require_role("admin", "admission_director")),
     full_name: str = Form(...),
     phone: str = Form(...),
     email: str = Form(...),
@@ -213,10 +307,17 @@ async def student_edit_post(
         notes=notes,
         changed_by_user_id=changed_by,
     )
+    flash_success(request, "Étudiant modifié avec succès")
     return RedirectResponse(url=f"/students/{student_id}", status_code=303)
 
 
 @router.post("/{student_id}/delete")
-async def student_delete_post(request: Request, student_id: int, user=Depends(require_role("admin", "agent")), db=Depends(db_dep)):
+async def student_delete_post(request: Request, student_id: int, user=Depends(require_role("admin", "admission_director")), db=Depends(db_dep)):
+    student = await get_student(db, student_id)
+    if not student:
+        return RedirectResponse(url="/students", status_code=303)
+    if user.get("role") == "agent" and student.get("agent_name") != user.get("full_name"):
+        raise HTTPException(status_code=403, detail="Forbidden")
     await delete_student(db, student_id)
+    flash_success(request, "Étudiant supprimé")
     return RedirectResponse(url="/students", status_code=303)

@@ -9,37 +9,95 @@ def _now_iso() -> str:
     return datetime.utcnow().isoformat(timespec="seconds")
 
 
-async def list_students(db: Any, *, status_id: Optional[int] = None):
+async def list_students(db: Any, *, status_id: Optional[int] = None, agent_name: Optional[str] = None, search: Optional[str] = None):
     if settings.db_backend != "sqlite":
         q = {}
         if status_id is not None:
             q["status_id"] = status_id
+        if agent_name:
+            q["agent_name"] = agent_name
+        if search:
+            q["$or"] = [
+                {"full_name": {"$regex": search, "$options": "i"}},
+                {"email": {"$regex": search, "$options": "i"}},
+                {"phone": {"$regex": search, "$options": "i"}}
+            ]
         cur = db.students.find(q).sort("created_at", -1)
         return [s async for s in cur]
 
     c = conn()
     try:
-        if status_id is None:
-            cur = c.execute(
-                """
-                SELECT s.*, st.name AS status_name
-                FROM students s
-                LEFT JOIN statuses st ON st.id = s.status_id
-                ORDER BY s.created_at DESC
-                """
-            )
-        else:
-            cur = c.execute(
-                """
-                SELECT s.*, st.name AS status_name
-                FROM students s
-                LEFT JOIN statuses st ON st.id = s.status_id
-                WHERE s.status_id=?
-                ORDER BY s.created_at DESC
-                """,
-                (status_id,),
-            )
+        query = """
+            SELECT s.*, st.name AS status_name
+            FROM students s
+            LEFT JOIN statuses st ON st.id = s.status_id
+            WHERE 1=1
+        """
+        params = []
+        
+        if status_id is not None:
+            query += " AND s.status_id = ?"
+            params.append(status_id)
+            
+        if agent_name:
+            query += " AND s.agent_name = ?"
+            params.append(agent_name)
+            
+        if search:
+            query += " AND (s.full_name LIKE ? OR s.email LIKE ? OR s.phone LIKE ?)"
+            s_val = f"%{search}%"
+            params.extend([s_val, s_val, s_val])
+            
+        query += " ORDER BY s.created_at DESC"
+        cur = c.execute(query, params)
         return [dict(r) for r in cur.fetchall()]
+    finally:
+        c.close()
+
+
+async def set_student_status(
+    db: Any,
+    *,
+    student_id: int,
+    to_status_id: Optional[int],
+    changed_by_user_id: Optional[int],
+):
+    now = _now_iso()
+
+    if settings.db_backend != "sqlite":
+        student = await db.students.find_one({"_id": student_id})
+        if not student:
+            return
+        from_status_id = student.get("status_id")
+        await db.students.update_one({"_id": student_id}, {"$set": {"status_id": to_status_id, "updated_at": now}})
+        await db.student_status_history.insert_one(
+            {
+                "student_id": student_id,
+                "from_status_id": from_status_id,
+                "to_status_id": to_status_id,
+                "changed_by_user_id": changed_by_user_id,
+                "changed_at": now,
+            }
+        )
+        return
+
+    c = conn()
+    try:
+        cur = c.execute("SELECT status_id FROM students WHERE id=? LIMIT 1", (student_id,))
+        row = cur.fetchone()
+        if not row:
+            return
+        from_status_id = row["status_id"]
+
+        c.execute("UPDATE students SET status_id=?, updated_at=? WHERE id=?", (to_status_id, now, student_id))
+        c.execute(
+            """
+            INSERT INTO student_status_history(student_id, from_status_id, to_status_id, changed_by_user_id, changed_at)
+            VALUES(?,?,?,?,?)
+            """,
+            (student_id, from_status_id, to_status_id, changed_by_user_id, now),
+        )
+        c.commit()
     finally:
         c.close()
 

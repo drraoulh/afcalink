@@ -93,9 +93,6 @@ async def get_user_by_id(db: Any, user_id: str):
 
 
 async def ensure_bootstrap_admin(db: Any) -> None:
-    if settings.db_backend != "sqlite":
-        return
-
     if await count_users(db) > 0:
         return
 
@@ -106,3 +103,16 @@ async def ensure_bootstrap_admin(db: Any) -> None:
         password=settings.bootstrap_admin_password,
         role="admin",
     )
+
+
+async def list_users(db: Any):
+    if settings.db_backend == "sqlite":
+        c = conn()
+        try:
+            cur = c.execute("SELECT id, full_name, email, role, active FROM users WHERE active=1 ORDER BY full_name")
+            return [dict(r) for r in cur.fetchall()]
+        finally:
+            c.close()
+
+    cursor = db.users.find({"active": True}).sort("full_name", 1)
+    return [u async for u in cursor]

@@ -1,0 +1,268 @@
+{% extends "base.html" %}
+
+{% block page_title %}Rapport Journalier d'Activité{% endblock %}
+
+{% block content %}
+<div class="row g-4 mb-5 animate-in">
+    <div class="col-12">
+        <div class="card border-0 shadow-premium p-4 bg-primary text-white overflow-hidden position-relative">
+            <div class="position-absolute top-0 end-0 p-5 opacity-10">
+                <i data-lucide="clipboard-check" style="width: 150px; height: 150px;"></i>
+            </div>
+            <div class="position-relative">
+                <h3 class="fw-extrabold mb-1">Journal de Bord</h3>
+                <p class="opacity-75 mb-0">
+                    {% if is_admin %}
+                    Supervision des activités quotidiennes des agents commerciaux
+                    {% else %}
+                    Analysez vos performances et soumettez votre rapport pour la journée du <span class="fw-bold">{{
+                        today }}</span>
+                    {% endif %}
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Formulaire de Saisie (Hide for Admin) -->
+    {% if not is_admin %}
+    <div class="col-12 col-xl-5">
+        <div class="card border-0 shadow-premium p-4 h-100 animate-in" style="animation-delay: 0.1s;">
+            <div class="d-flex align-items-center gap-3 mb-4 p-2 bg-light-soft rounded-4">
+                <div class="bg-primary text-white p-3 rounded-4 shadow-sm">
+                    <i data-lucide="pen-tool" style="width: 20px; height: 20px;"></i>
+                </div>
+                <div>
+                    <h5 class="fw-bold mb-0">Nouvelle Entrée</h5>
+                    <p class="text-muted extra-small mb-0">Complétez les informations ci-dessous</p>
+                </div>
+            </div>
+
+            <form action="/activity/daily" method="post">
+                <input type="hidden" name="report_date" value="{{ today }}">
+
+                <div class="mb-4">
+                    <label class="form-label fw-bold extra-small text-uppercase letter-spacing-1 text-muted">Résumé de
+                        votre activité</label>
+                    <textarea name="content" class="form-control bg-light border-0 p-3 rounded-4" rows="5"
+                        placeholder="Qu'avez-vous accompli aujourd'hui ? (Appels, réunions, déplacements...)"
+                        required></textarea>
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label fw-bold extra-small text-uppercase letter-spacing-1 text-muted">Tâches
+                        majeures accomplies</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-light border-0"><i data-lucide="check-square"
+                                style="width: 16px;"></i></span>
+                        <input type="text" name="tasks_completed" class="form-control bg-light border-0 py-2"
+                            placeholder="Ex: Signature contrat, Relance Groupe X">
+                    </div>
+                </div>
+
+                <div class="row g-3 mb-5">
+                    <div class="col-6">
+                        <div class="p-4 rounded-4 bg-info-soft border border-info border-opacity-10 position-relative">
+                            <label
+                                class="form-label fw-bold extra-small text-uppercase text-info mb-3 d-block">Prospects
+                                (Auto)</label>
+                            <div class="d-flex align-items-center justify-content-between">
+                                <h3 class="fw-extrabold mb-0 text-info">{{ auto_prospects }}</h3>
+                                <input type="hidden" name="prospects_met" value="{{ auto_prospects }}">
+                                <div class="bg-white p-2 rounded-circle shadow-sm">
+                                    <i data-lucide="users" class="text-info" style="width: 16px;"></i>
+                                </div>
+                            </div>
+                            <p class="extra-small text-info opacity-75 mt-2 mb-0">Inscrits aujourd'hui</p>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div
+                            class="p-4 rounded-4 bg-success-soft border border-success border-opacity-10 position-relative">
+                            <label
+                                class="form-label fw-bold extra-small text-uppercase text-success mb-3 d-block">Paiements
+                                (Auto)</label>
+                            <div class="d-flex align-items-center justify-content-between">
+                                <h3 class="fw-extrabold mb-0 text-success">{{ auto_payments }}</h3>
+                                <input type="hidden" name="payments_collected" value="{{ auto_payments }}">
+                                <div class="bg-white p-2 rounded-circle shadow-sm">
+                                    <i data-lucide="credit-card" class="text-success" style="width: 16px;"></i>
+                                </div>
+                            </div>
+                            <p class="extra-small text-success opacity-75 mt-2 mb-0">Encaissés aujourd'hui</p>
+                        </div>
+                    </div>
+                </div>
+
+                <button type="submit"
+                    class="btn btn-primary w-100 py-3 rounded-pill fw-bold shadow-primary-sm animate-pulse-slow">
+                    <i data-lucide="check" class="me-2" style="width: 20px;"></i>
+                    Soumettre mon Rapport
+                </button>
+            </form>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Historique des rapports -->
+    <div class="col-12 {% if not is_admin %}col-xl-7{% endif %}">
+        <div class="card border-0 shadow-premium p-4 h-100 animate-in" style="animation-delay: 0.2s;">
+            <div
+                class="d-flex flex-wrap justify-content-between align-items-center mb-5 p-3 bg-light-soft rounded-4 gap-3">
+                <h6 class="fw-bold mb-0 text-dark">
+                    {% if is_admin %}
+                    Flux des Rapports Agents
+                    {% else %}
+                    Dernières Activités
+                    {% endif %}
+                </h6>
+
+                {% if is_admin %}
+                <form class="d-flex flex-wrap gap-2" method="get">
+                    <select name="agent_id"
+                        class="form-select form-select-sm border-0 bg-white rounded-pill px-3 shadow-sm"
+                        style="width: 150px;" onchange="this.form.submit()">
+                        <option value="">Tous les agents</option>
+                        {% for u in users_list %}
+                        <option value="{{ u.id }}" {% if current_agent_id|string==u.id|string %}selected{% endif %}>{{
+                            u.full_name }}</option>
+                        {% endfor %}
+                    </select>
+                    <input type="date" name="filter_date"
+                        class="form-control form-control-sm border-0 bg-white rounded-pill px-3 shadow-sm"
+                        style="width: 130px;" value="{{ current_filter_date or '' }}" onchange="this.form.submit()">
+                    {% if current_agent_id or current_filter_date %}
+                    <a href="/activity/daily" class="btn btn-sm btn-light rounded-circle shadow-sm"
+                        title="Réinitialiser">
+                        <i data-lucide="x" style="width: 14px;"></i>
+                    </a>
+                    {% endif %}
+                </form>
+                {% else %}
+                <div
+                    class="badge bg-white text-primary border-primary border-opacity-25 border px-3 py-1 rounded-pill smaller">
+                    7 derniers jours</div>
+                {% endif %}
+            </div>
+
+            {% if not reports %}
+            <div class="text-center py-5">
+                <div class="bg-light rounded-circle d-flex align-items-center justify-content-center mx-auto mb-4"
+                    style="width: 100px; height: 100px;">
+                    <i data-lucide="history" class="text-muted opacity-25" style="width: 50px; height: 50px;"></i>
+                </div>
+                <h5 class="fw-bold text-dark">Aucun historique</h5>
+                <p class="text-muted smaller">{% if current_agent_id or current_filter_date %}Aucun rapport ne
+                    correspond à ces filtres.{% else %}Les rapports envoyés apparaîtront ici.{% endif %}</p>
+            </div>
+            {% else %}
+            <div class="reports-container pe-2" style="max-height: 800px; overflow-y: auto;">
+                {% for r in reports %}
+                <div class="report-card-item bg-white border border-light p-4 rounded-4 mb-4 transition-all">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="bg-dark text-white rounded-3 px-3 py-1 fw-bold smaller">
+                                {{ r.report_date }}
+                            </div>
+                            {% if is_admin %}
+                            <div class="bg-primary-soft text-primary rounded-3 px-3 py-1 fw-bold smaller">
+                                <i data-lucide="user" class="me-1" style="width: 12px;"></i> {{ r.agent_name }}
+                            </div>
+                            {% endif %}
+                            <div class="text-muted extra-small d-flex align-items-center gap-1">
+                                <i data-lucide="clock" style="width: 12px;"></i> {{ r.created_at[:16].replace('T', ' ')
+                                }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="report-body bg-light-soft p-3 rounded-4 mb-3 border-start border-4 border-primary">
+                        <p class="mb-0 text-dark fw-medium lh-base">{{ r.content }}</p>
+                    </div>
+
+                    {% if r.tasks_completed %}
+                    <div class="d-flex align-items-center gap-2 mb-4 px-2">
+                        <div class="bg-success text-white rounded-circle p-1 d-flex align-items-center">
+                            <i data-lucide="check" style="width: 10px; height: 10px;"></i>
+                        </div>
+                        <span class="smaller fw-bold text-muted">{{ r.tasks_completed }}</span>
+                    </div>
+                    {% endif %}
+
+                    <div class="d-flex gap-4 pt-3 border-top mt-auto">
+                        <div class="stat-pill d-flex align-items-center gap-2 bg-info-soft px-3 py-2 rounded-pill">
+                            <span class="fw-extrabold text-info fs-5">{{ r.prospects_met }}</span>
+                            <span class="extra-small text-info fw-bold text-uppercase">Prospects</span>
+                        </div>
+                        <div class="stat-pill d-flex align-items-center gap-2 bg-success-soft px-3 py-2 rounded-pill">
+                            <span class="fw-extrabold text-success fs-5">{{ r.payments_collected }}</span>
+                            <span class="extra-small text-success fw-bold text-uppercase">Paiements</span>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+    .fw-extrabold {
+        font-weight: 800;
+    }
+
+    .letter-spacing-1 {
+        letter-spacing: 1.2px;
+    }
+
+    .extra-small {
+        font-size: 0.65rem;
+    }
+
+    .bg-light-soft {
+        background-color: #f8fafc;
+    }
+
+    .report-card-item {
+        border: 1px solid #f1f5f9;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02);
+    }
+
+    .report-card-item:hover {
+        transform: scale(1.005);
+        border-color: #e2e8f0;
+        box-shadow: var(--shadow-md);
+    }
+
+    .shadow-primary-sm {
+        box-shadow: 0 10px 15px -3px rgba(79, 70, 229, 0.25);
+    }
+
+    @keyframes pulse-slow {
+
+        0%,
+        100% {
+            transform: scale(1);
+        }
+
+        50% {
+            transform: scale(1.02);
+        }
+    }
+
+    .animate-pulse-slow {
+        animation: pulse-slow 3s infinite ease-in-out;
+    }
+
+    ::-webkit-scrollbar {
+        width: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb {
+        background: #e2e8f0;
+        border-radius: 10px;
+    }
+</style>
+{% endblock %}

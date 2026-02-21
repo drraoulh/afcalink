@@ -5,6 +5,7 @@ from app.deps import db_dep, get_current_user
 from app.data.users import count_users, create_user, get_user_by_email
 from app.security import verify_password
 from app.templating import templates
+from pymongo.errors import PyMongoError
 
 router = APIRouter()
 
@@ -16,7 +17,17 @@ async def login_get(request: Request):
 
 @router.get("/setup")
 async def setup_get(request: Request, db=Depends(db_dep)):
-    users_count = await count_users(db)
+    try:
+        users_count = await count_users(db)
+    except PyMongoError:
+        return templates.TemplateResponse(
+            "auth/setup.html",
+            {
+                "request": request,
+                "error": "Connexion MongoDB Atlas impossible. Vérifie ta connexion réseau / IP allowlist / URI.",
+            },
+            status_code=503,
+        )
     if users_count > 0:
         return RedirectResponse(url="/login", status_code=303)
     return templates.TemplateResponse("auth/setup.html", {"request": request})
@@ -30,7 +41,17 @@ async def setup_post(
     password: str = Form(...),
     db=Depends(db_dep),
 ):
-    users_count = await count_users(db)
+    try:
+        users_count = await count_users(db)
+    except PyMongoError:
+        return templates.TemplateResponse(
+            "auth/setup.html",
+            {
+                "request": request,
+                "error": "Connexion MongoDB Atlas impossible. Vérifie ta connexion réseau / IP allowlist / URI.",
+            },
+            status_code=503,
+        )
     if users_count > 0:
         return RedirectResponse(url="/login", status_code=303)
 
@@ -46,7 +67,17 @@ async def login_post(
     password: str = Form(...),
     db=Depends(db_dep),
 ):
-    user = await get_user_by_email(db, email)
+    try:
+        user = await get_user_by_email(db, email)
+    except PyMongoError:
+        return templates.TemplateResponse(
+            "auth/login.html",
+            {
+                "request": request,
+                "error": "Connexion MongoDB Atlas impossible. Vérifie ta connexion réseau / IP allowlist / URI.",
+            },
+            status_code=503,
+        )
     if user and user.get("active") in (0, False):
         user = None
     if not user or not verify_password(password, user.get("password_hash", "")):

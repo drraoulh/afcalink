@@ -1,138 +1,445 @@
 {% extends "base.html" %}
 
+{% block page_title %}Dossier - {{ student.full_name }}{% endblock %}
+
+{% block modals %}
+<!-- New Task Modal -->
+<div class="modal fade" id="newTaskModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content border-0 shadow">
+      <div class="modal-header border-0 pb-0">
+        <h5 class="modal-title fw-bold">Nouveau Rappel</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="post" action="/tasks/new">
+        <div class="modal-body">
+          <input type="hidden" name="student_id" value="{{ student.id }}">
+          <div class="mb-3">
+            <label class="form-label">Titre</label>
+            <input type="text" name="title" class="form-control" required placeholder="Relance passeport, etc...">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Description</label>
+            <textarea name="description" class="form-control" rows="2"></textarea>
+          </div>
+          <div class="row mb-3">
+            <div class="col-6">
+              <label class="form-label">Échéance</label>
+              <input type="date" name="due_date" class="form-control" value="{{ now_date }}">
+            </div>
+            <div class="col-6">
+              <label class="form-label">Priorité</label>
+              <select name="priority" class="form-select">
+                <option value="low">Basse</option>
+                <option value="medium" selected>Moyenne</option>
+                <option value="high">Haute</option>
+              </select>
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Assigner à</label>
+            <select name="assigned_to_user_id" class="form-select">
+              <option value="{{ user.id }}">Moi-même</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer border-0">
+          <button type="button" class="btn btn-light" data-bs-dismiss="modal">Annuler</button>
+          <button type="submit" class="btn btn-primary px-4">Créer le rappel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Preview Modal -->
+<div class="modal fade" id="previewModal" tabindex="-1">
+  <div class="modal-dialog modal-xl modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg">
+      <div class="modal-header border-0 bg-dark text-white p-3">
+        <h6 class="modal-title fw-bold" id="previewTitle">Prévisualisation</h6>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body p-0 bg-light d-flex align-items-center justify-content-center" style="min-height: 80vh;">
+        <div id="previewSpinner" class="spinner-border text-primary position-absolute" role="status"></div>
+        <iframe id="previewFrame" src="" class="w-100 border-0" style="height: 80vh; display: none;"></iframe>
+        <img id="previewImage" src="" class="img-fluid" style="max-height: 80vh; display: none;">
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-3">
-  <h1 class="h4 mb-0">Fiche étudiant</h1>
-  <div class="d-flex gap-2">
-    <a class="btn btn-outline-secondary btn-sm" href="/students">Retour</a>
-    {% if user.role in ['admin', 'agent'] %}
-    <a class="btn btn-dark btn-sm" href="/students/{{ student.id }}/edit">Modifier</a>
-    {% endif %}
+<div class="row mb-4">
+  <div class="col-12 d-flex justify-content-between align-items-center">
+    <div class="d-flex align-items-center gap-3">
+      <a href="/students" class="btn btn-light btn-sm rounded-circle d-flex align-items-center justify-content-center"
+        style="width: 35px; height: 35px;">
+        <i data-lucide="arrow-left" style="width: 18px;"></i>
+      </a>
+      <div>
+        <h3 class="fw-bold mb-0">{{ student.full_name }}</h3>
+        <p class="text-muted smaller mb-0">
+          <span class="badge bg-light text-dark border me-2">ID: #STU-{{ student.id }}</span>
+          Inscrit le {{ student.created_at[:10] }} par <strong>{{ student.agent_name }}</strong>
+        </p>
+      </div>
+    </div>
+
+    <div class="d-flex gap-2">
+      <!-- Quick Status Update -->
+      {% if user.role in ['admin', 'agent'] %}
+      <div class="dropdown">
+        <button
+          class="btn {% if student.status_name == 'Accepté' %}btn-success{% elif student.status_name == 'Refusé' %}btn-danger{% else %}btn-outline-primary{% endif %} btn-sm dropdown-toggle d-flex align-items-center gap-2"
+          type="button" data-bs-toggle="dropdown">
+          <i data-lucide="refresh-cw" style="width: 16px;"></i>
+          Statut: {{ student.status_name or 'Initial' }}
+        </button>
+        <ul class="dropdown-menu dropdown-menu-end shadow border-0 smaller">
+          {% for st in statuses %}
+          <li>
+            <form action="/students/{{ student.id }}/status" method="post">
+              <input type="hidden" name="status_id" value="{{ st.id }}">
+              <button type="submit"
+                class="dropdown-item d-flex align-items-center gap-2 {% if student.status_id == st.id %}active{% endif %}">
+                {{ st.name }}
+              </button>
+            </form>
+          </li>
+          {% endfor %}
+        </ul>
+      </div>
+
+      <a class="btn btn-primary btn-sm d-flex align-items-center gap-2 px-3" href="/students/{{ student.id }}/edit">
+        <i data-lucide="edit-3" style="width: 16px;"></i>
+        Modifier
+      </a>
+      {% endif %}
+    </div>
   </div>
 </div>
 
-<div class="row g-3">
-  <div class="col-12 col-lg-7">
-    <div class="card">
-      <div class="card-body">
-        <dl class="row mb-0">
-          <dt class="col-sm-4">Nom</dt><dd class="col-sm-8">{{ student.full_name }}</dd>
-          <dt class="col-sm-4">Téléphone</dt><dd class="col-sm-8">{{ student.phone }}</dd>
-          <dt class="col-sm-4">Email</dt><dd class="col-sm-8">{{ student.email }}</dd>
-          <dt class="col-sm-4">Pays</dt><dd class="col-sm-8">{{ student.country }}</dd>
-          <dt class="col-sm-4">Niveau</dt><dd class="col-sm-8">{{ student.study_level }}</dd>
-          <dt class="col-sm-4">Programme</dt><dd class="col-sm-8">{{ student.program_choice }}</dd>
-          <dt class="col-sm-4">Université</dt><dd class="col-sm-8">{{ student.university }}</dd>
-          <dt class="col-sm-4">Statut</dt><dd class="col-sm-8">{{ student.status_name or '-' }}</dd>
-          <dt class="col-sm-4">Agent</dt><dd class="col-sm-8">{{ student.agent_name }}</dd>
-        </dl>
+<!-- Navigation Tabs -->
+<ul class="nav nav-pills mb-4 bg-white p-1 rounded-pill shadow-sm d-inline-flex border" id="studentTabs" role="tablist">
+  <li class="nav-item">
+    <button class="nav-link active rounded-pill px-4" id="info-tab" data-bs-toggle="tab" data-bs-target="#info-pane"
+      type="button">Profil</button>
+  </li>
+  <li class="nav-item">
+    <button class="nav-link rounded-pill px-4" id="docs-tab" data-bs-toggle="tab" data-bs-target="#docs-pane"
+      type="button">Documents ({{ documents|length }})</button>
+  </li>
+  <li class="nav-item">
+    <button class="nav-link rounded-pill px-4" id="finance-tab" data-bs-toggle="tab" data-bs-target="#finance-pane"
+      type="button">Paiements</button>
+  </li>
+  <li class="nav-item">
+    <button class="nav-link rounded-pill px-4" id="history-tab" data-bs-toggle="tab" data-bs-target="#history-pane"
+      type="button">Historique</button>
+  </li>
+</ul>
 
-        {% if student.notes %}
-        <hr />
-        <div>
-          <div class="text-muted mb-1">Notes</div>
-          <div class="border rounded p-2 bg-light">{{ student.notes }}</div>
+<div class="tab-content" id="studentTabsContent">
+  <!-- Profile Info Pane -->
+  <div class="tab-pane fade show active" id="info-pane" role="tabpanel">
+    <div class="row g-4">
+      <div class="col-12 col-lg-7">
+        <div class="card shadow-sm border-0">
+          <div class="card-body p-4">
+            <h5 class="fw-bold mb-4 d-flex align-items-center gap-2">
+              <i data-lucide="user-circle" class="text-primary"></i>
+              Détails du Candidat
+            </h5>
+
+            <div class="row g-4">
+              <div class="col-md-6">
+                <label class="text-muted smaller text-uppercase fw-bold d-block mb-1">Coordonnées</label>
+                <div class="d-flex align-items-center gap-2 mb-2">
+                  <div class="bg-light rounded p-2"><i data-lucide="phone" class="text-primary"
+                      style="width: 16px;"></i></div>
+                  <span class="fw-medium">{{ student.phone }}</span>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                  <div class="bg-light rounded p-2"><i data-lucide="mail" class="text-primary" style="width: 16px;"></i>
+                  </div>
+                  <span class="fw-medium">{{ student.email }}</span>
+                </div>
+              </div>
+
+              <div class="col-md-6">
+                <label class="text-muted smaller text-uppercase fw-bold d-block mb-1">Destination & Académique</label>
+                <div class="d-flex align-items-center gap-2 mb-2">
+                  <div class="bg-light rounded p-2"><i data-lucide="globe" class="text-primary"
+                      style="width: 16px;"></i></div>
+                  <span class="fw-bold text-dark">{{ student.country }}</span>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                  <div class="bg-light rounded p-2"><i data-lucide="university" class="text-primary"
+                      style="width: 16px;"></i></div>
+                  <span class="fw-medium">{{ student.university }}</span>
+                </div>
+              </div>
+
+              <div class="col-12">
+                <label class="text-muted smaller text-uppercase fw-bold d-block mb-1">Programme & Niveau</label>
+                <div class="bg-primary-soft p-3 rounded d-flex justify-content-between align-items-center">
+                  <div>
+                    <div class="fw-bold text-primary">{{ student.program_choice }}</div>
+                    <div class="small text-muted">{{ student.study_level }}</div>
+                  </div>
+                  <i data-lucide="graduation-cap" class="text-primary opacity-50"
+                    style="width: 32px; height: 32px;"></i>
+                </div>
+              </div>
+            </div>
+
+            {% if student.notes %}
+            <div class="mt-4 pt-4 border-top">
+              <label class="text-muted smaller text-uppercase fw-bold d-block mb-2">Notes Internes</label>
+              <div class="bg-light rounded p-3 small text-secondary border-start border-4 border-primary">
+                {{ student.notes }}
+              </div>
+            </div>
+            {% endif %}
+          </div>
         </div>
-        {% endif %}
+      </div>
 
-        {% if user.role in ['admin', 'agent'] %}
-        <hr />
-        <form method="post" action="/students/{{ student.id }}/delete" onsubmit="return confirm('Supprimer cet étudiant ?');">
-          <button class="btn btn-outline-danger" type="submit">Supprimer</button>
-        </form>
-        {% endif %}
+      <div class="col-12 col-lg-5">
+        <div class="card shadow-sm border-0 mb-4">
+          <div class="card-body p-4">
+            <h5 class="fw-bold mb-3">Résumé Financier</h5>
+            <div class="d-flex justify-content-between mb-2">
+              <span class="text-muted">Total Contrat</span>
+              <span class="fw-bold">{{ "{:,.0f}".format(student.total_amount or 0).replace(',', ' ') }} {{
+                student.currency }}</span>
+            </div>
+            <div class="progress mb-4" style="height: 10px;">
+              <div class="progress-bar bg-success" style="width: 45%;"></div>
+            </div>
+            <a href="/payments/student/{{ student.id }}" class="btn btn-outline-primary btn-sm w-100 py-2">Gérer les
+              versements</a>
+          </div>
+        </div>
+
+        <div class="card shadow-sm border-0">
+          <div class="card-body p-4">
+            <h5 class="fw-bold mb-3">Actions de Suivi</h5>
+            <div class="d-grid gap-2">
+              <button class="btn btn-sm btn-light d-flex align-items-center gap-3 px-3 py-2 text-start"
+                data-bs-toggle="modal" data-bs-target="#newTaskModal">
+                <i data-lucide="list-plus" class="text-primary"></i>
+                <div>
+                  <div class="fw-bold smaller">Ajouter un rappel</div>
+                  <div class="text-muted smaller">Relance, document manquant...</div>
+                </div>
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
 
-  <div class="col-12 col-lg-5">
-    <div class="card">
-      <div class="card-header">Historique des statuts</div>
-      <div class="card-body p-0">
-        <div class="table-responsive">
-          <table class="table mb-0">
-            <thead>
-              <tr>
-                <th>Date</th>
-                <th>De</th>
-                <th>Vers</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for h in history %}
-              <tr>
-                <td>{{ h.changed_at }}</td>
-                <td>{{ h.from_status_name or '-' }}</td>
-                <td>{{ h.to_status_name or '-' }}</td>
-              </tr>
-              {% else %}
-              <tr>
-                <td colspan="3" class="text-center text-muted py-3">Aucun historique</td>
-              </tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        </div>
+  <!-- Documents Pane -->
+  <div class="tab-pane fade" id="docs-pane" role="tabpanel">
+    <div class="card shadow-sm border-0">
+      <div class="card-header bg-transparent border-0 pt-4 px-4 d-flex justify-content-between align-items-center">
+        <h5 class="fw-bold mb-0">Pièces Jointe & Documents</h5>
+        <button class="btn btn-primary btn-sm d-flex align-items-center gap-2" type="button" data-bs-toggle="collapse"
+          data-bs-target="#uploadForm">
+          <i data-lucide="file-up" style="width: 16px;"></i>
+          Uploader
+        </button>
       </div>
-    </div>
-  </div>
+      <div class="card-body p-4">
+        <div class="collapse mb-4" id="uploadForm">
+          <form class="row g-2 p-3 bg-light rounded border" method="post" action="/students/{{ student.id }}/documents"
+            enctype="multipart/form-data">
+            <div class="col-12 col-md-4">
+              <input class="form-control form-control-sm" name="doc_type" placeholder="Type de document (ex: Passeport)"
+                required />
+            </div>
+            <div class="col-12 col-md-5">
+              <input class="form-control form-control-sm" type="file" name="file" required />
+            </div>
+            <div class="col-12 col-md-3 d-grid">
+              <button class="btn btn-dark btn-sm" type="submit">Lancer l'envoi</button>
+            </div>
+          </form>
+        </div>
 
-  <div class="col-12">
-    <div class="card">
-      <div class="card-header">Documents</div>
-      <div class="card-body">
-        <form class="row g-2" method="post" action="/students/{{ student.id }}/documents" enctype="multipart/form-data">
-          <div class="col-12 col-md-4">
-            <input class="form-control" name="doc_type" placeholder="Type (ex: Passeport)" required />
-          </div>
-          <div class="col-12 col-md-6">
-            <input class="form-control" type="file" name="file" required accept=".pdf,.doc,.docx,.png,.jpg,.jpeg,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,image/png,image/jpeg" />
-            <div class="form-text">PDF / Word (DOC, DOCX) / Images (PNG, JPG). Max 10 Mo</div>
-          </div>
-          <div class="col-12 col-md-2 d-grid">
-            <button class="btn btn-dark" type="submit">Uploader</button>
-          </div>
-        </form>
-
-        <hr />
-
-        <div class="table-responsive">
-          <table class="table mb-0 align-middle">
-            <thead>
-              <tr>
-                <th>Type</th>
-                <th>Fichier</th>
-                <th>Taille</th>
-                <th>Date</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for d in documents %}
-              <tr>
-                <td>{{ d.doc_type }}</td>
-                <td>{{ d.original_filename }}</td>
-                <td>{{ (d.size_bytes // 1024) }} Ko</td>
-                <td>{{ d.uploaded_at }}</td>
-                <td class="text-end">
-                  <a class="btn btn-outline-secondary btn-sm" href="/students/documents/{{ d.id }}/download">Télécharger</a>
+        <div class="row g-3">
+          {% for d in documents %}
+          <div class="col-12 col-md-6 col-xl-4">
+            <div class="d-flex align-items-center p-3 rounded border bg-light-soft hover-shadow">
+              <div class="bg-white rounded p-2 me-3 border shadow-sm">
+                {% if d.original_filename.endswith('.pdf') %}
+                <i data-lucide="file-text" class="text-danger" style="width: 24px;"></i>
+                {% elif d.original_filename.endswith(('.png', '.jpg', '.jpeg')) %}
+                <i data-lucide="image" class="text-success" style="width: 24px;"></i>
+                {% else %}
+                <i data-lucide="file" class="text-primary" style="width: 24px;"></i>
+                {% endif %}
+              </div>
+              <div class="flex-grow-1 min-width-0">
+                <div class="fw-bold text-dark text-truncate smaller">{{ d.original_filename }}</div>
+                <div class="text-muted smaller">{{ d.doc_type }} • {{ (d.size_bytes // 1024) }} Ko</div>
+              </div>
+              <div class="dropdown">
+                <button class="btn btn-sm p-1 rounded-circle border-0" data-bs-toggle="dropdown">
+                  <i data-lucide="more-horizontal" style="width: 16px;"></i>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end shadow border-0 smaller">
+                  <li>
+                    <a class="dropdown-item d-flex align-items-center gap-2" href="javascript:void(0)"
+                      onclick="previewDoc('{{ d.id }}', '{{ d.original_filename }}')">
+                      <i data-lucide="eye" style="width: 14px;"></i> Visualiser
+                    </a>
+                  </li>
+                  <li><a class="dropdown-item d-flex align-items-center gap-2"
+                      href="/students/documents/{{ d.id }}/download"><i data-lucide="download" style="width: 14px;"></i>
+                      Télécharger</a></li>
                   {% if user.role in ['admin', 'agent'] %}
-                  <form class="d-inline" method="post" action="/students/documents/{{ d.id }}/delete" onsubmit="return confirm('Supprimer ce document ?');">
-                    <button class="btn btn-outline-danger btn-sm" type="submit">Supprimer</button>
-                  </form>
+                  <li>
+                    <hr class="dropdown-divider">
+                  </li>
+                  <li>
+                    <form action="/students/documents/{{ d.id }}/delete" method="post"
+                      onsubmit="return confirm('Supprimer ?');">
+                      <button type="submit" class="dropdown-item text-danger d-flex align-items-center gap-2"><i
+                          data-lucide="trash-2" style="width: 14px;"></i> Supprimer</button>
+                    </form>
+                  </li>
                   {% endif %}
-                </td>
-              </tr>
-              {% else %}
-              <tr>
-                <td colspan="5" class="text-center text-muted py-3">Aucun document</td>
-              </tr>
-              {% endfor %}
-            </tbody>
-          </table>
+                </ul>
+              </div>
+            </div>
+          </div>
+          {% else %}
+          <div class="col-12 text-center py-5">
+            <i data-lucide="folder-open" class="text-muted opacity-10 mb-3" style="width: 64px; height: 64px;"></i>
+            <p class="text-muted">Aucun document uploade pour ce dossier.</p>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Finances Pane -->
+  <div class="tab-pane fade" id="finance-pane" role="tabpanel">
+    <div class="card shadow-sm border-0">
+      <div class="card-body p-5 text-center">
+        <i data-lucide="dollar-sign" class="text-primary opacity-25 mb-4" style="width: 64px; height: 64px;"></i>
+        <h4 class="fw-bold">Redirection Financière</h4>
+        <p class="text-muted">Le module de paiement complet est séparé pour plus de sécurité.</p>
+        <a href="/payments/student/{{ student.id }}" class="btn btn-primary px-5 rounded-pill">Accéder à la gestion des
+          paiements</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- History Pane -->
+  <div class="tab-pane fade" id="history-pane" role="tabpanel">
+    <div class="card shadow-sm border-0">
+      <div class="card-body p-4">
+        <h5 class="fw-bold mb-4">Audit & Évolution du Dossier</h5>
+        <div class="timeline-v2">
+          {% for h in history %}
+          <div class="timeline-item d-flex gap-4 pb-4 position-relative">
+            <div
+              class="timeline-marker bg-primary text-white rounded-circle d-flex align-items-center justify-content-center border border-4 border-white shadow-sm"
+              style="width: 38px; height: 38px; min-width: 38px; z-index: 2;">
+              <i data-lucide="check" style="width: 16px;"></i>
+            </div>
+            <div class="timeline-content pt-1">
+              <div class="fw-bold text-dark">{{ h.to_status_name }}</div>
+              <div class="text-muted smaller mb-2">{{ h.changed_at[:16].replace('T', ' à ') }}</div>
+              {% if h.from_status_name %}
+              <div class="bg-light p-2 rounded smaller text-muted inline-block">
+                Etape précédente: <span class="text-decoration-line-through">{{ h.from_status_name }}</span>
+              </div>
+              {% endif %}
+            </div>
+          </div>
+          {% else %}
+          <p class="text-muted text-center py-5">Aucun historique de modification disponible.</p>
+          {% endfor %}
         </div>
       </div>
     </div>
   </div>
 </div>
+
+<script>
+  function previewDoc(id, filename) {
+    const modal = new bootstrap.Modal(document.getElementById('previewModal'));
+    const frame = document.getElementById('previewFrame');
+    const image = document.getElementById('previewImage');
+    const spinner = document.getElementById('previewSpinner');
+    const title = document.getElementById('previewTitle');
+
+    title.innerText = filename;
+    spinner.style.display = 'block';
+    frame.style.display = 'none';
+    image.style.display = 'none';
+
+    const url = `/students/documents/${id}/preview`;
+    const ext = filename.toLowerCase().split('.').pop();
+
+    if (ext === 'pdf') {
+      frame.src = url;
+      frame.onload = () => {
+        spinner.style.display = 'none';
+        frame.style.display = 'block';
+      };
+    } else if (['jpg', 'jpeg', 'png', 'gif'].includes(ext)) {
+      image.src = url;
+      image.onload = () => {
+        spinner.style.display = 'none';
+        image.style.display = 'block';
+      };
+    } else {
+      spinner.style.display = 'none';
+      alert('Ce type de fichier ne peut pas être prévisualisé directement.');
+      return;
+    }
+
+    modal.show();
+  }
+</script>
+
+<style>
+  .nav-pills .nav-link {
+    color: var(--text-main);
+    font-weight: 500;
+  }
+
+  .nav-pills .nav-link.active {
+    background-color: var(--primary);
+    box-shadow: 0 4px 10px rgba(79, 70, 229, 0.2);
+  }
+
+  .bg-light-soft {
+    background-color: rgba(0, 0, 0, 0.015);
+  }
+
+  .hover-shadow:hover {
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+  }
+
+  .timeline-v2:before {
+    content: '';
+    position: absolute;
+    left: 18px;
+    top: 50px;
+    bottom: 50px;
+    width: 2px;
+    background-color: #e2e8f0;
+    z-index: 1;
+  }
+</style>
 {% endblock %}

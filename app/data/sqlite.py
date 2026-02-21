@@ -122,6 +122,91 @@ def init_sqlite() -> None:
         )
 
         conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS partners (
+              id INTEGER PRIMARY KEY AUTOINCREMENT,
+              name TEXT NOT NULL,
+              country TEXT NOT NULL,
+              contact_person TEXT,
+              email TEXT,
+              phone TEXT,
+              website TEXT,
+              notes TEXT,
+              created_at TEXT NOT NULL
+            );
+            """
+        )
+
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS tasks (
+              id INTEGER PRIMARY KEY AUTOINCREMENT,
+              title TEXT NOT NULL,
+              description TEXT,
+              due_date TEXT,
+              priority TEXT DEFAULT 'medium',
+              status TEXT DEFAULT 'pending',
+              assigned_to_user_id INTEGER,
+              student_id INTEGER,
+              created_at TEXT NOT NULL,
+              completed_at TEXT,
+              FOREIGN KEY(assigned_to_user_id) REFERENCES users(id),
+              FOREIGN KEY(student_id) REFERENCES students(id)
+            );
+            """
+        )
+
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS prospects (
+              id INTEGER PRIMARY KEY AUTOINCREMENT,
+              full_name TEXT NOT NULL,
+              phone TEXT NOT NULL,
+              email TEXT,
+              country_interest TEXT,
+              source TEXT,
+              status TEXT DEFAULT 'new',
+              agent_name TEXT,
+              notes TEXT,
+              created_at TEXT NOT NULL,
+              updated_at TEXT NOT NULL
+            );
+            """
+        )
+
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS daily_reports (
+              id INTEGER PRIMARY KEY AUTOINCREMENT,
+              user_id INTEGER NOT NULL,
+              report_date TEXT NOT NULL,
+              content TEXT NOT NULL,
+              tasks_completed TEXT,
+              prospects_met INTEGER DEFAULT 0,
+              payments_collected INTEGER DEFAULT 0,
+              created_at TEXT NOT NULL,
+              FOREIGN KEY(user_id) REFERENCES users(id)
+            );
+            """
+        )
+
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS notifications (
+              id INTEGER PRIMARY KEY AUTOINCREMENT,
+              user_id INTEGER NOT NULL,
+              title TEXT NOT NULL,
+              message TEXT NOT NULL,
+              type TEXT,
+              link TEXT,
+              is_read INTEGER DEFAULT 0,
+              created_at TEXT NOT NULL,
+              FOREIGN KEY(user_id) REFERENCES users(id)
+            );
+            """
+        )
+
+        conn.execute(
             "CREATE INDEX IF NOT EXISTS idx_students_status ON students(status_id);"
         )
 
@@ -131,6 +216,14 @@ def init_sqlite() -> None:
 
         conn.execute(
             "CREATE INDEX IF NOT EXISTS idx_payments_student ON payments(student_id);"
+        )
+
+        conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_tasks_assigned ON tasks(assigned_to_user_id);"
+        )
+
+        conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_prospects_status ON prospects(status);"
         )
 
         conn.commit()

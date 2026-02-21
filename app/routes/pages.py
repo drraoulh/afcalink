@@ -8,10 +8,13 @@ from app.templating import templates
 router = APIRouter()
 
 
+from app.data.payments import count_pending_payments
+
 @router.get("/")
 async def home(request: Request, user=Depends(get_current_user), db=Depends(db_dep)):
-    stats = await dashboard_stats(db)
+    stats = await dashboard_stats(db, user)
+    pending_count = await count_pending_payments(db)
     return templates.TemplateResponse(
         "dashboard.html",
-        {"request": request, "user": user, "stats": stats},
+        {"request": request, "user": user, "stats": stats, "pending_count": pending_count},
     )

@@ -1,34 +1,337 @@
 {% extends "base.html" %}
 
+{% block page_title %}Tableau de Bord{% endblock %}
+
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-3">
-  <h1 class="h4 mb-0">Dashboard</h1>
+<div class="row g-4 mb-5 animate-in">
+  <!-- Stats Header -->
+  <div class="col-12 col-sm-6 col-xl-3">
+    <div class="card border-0 shadow-sm p-4 hover-premium h-100">
+      <div class="d-flex align-items-center justify-content-between mb-3">
+        <div class="bg-primary-soft p-3 rounded-4">
+          <i data-lucide="users" style="width: 24px; height: 24px;"></i>
+        </div>
+        <div class="dropdown">
+          <i data-lucide="more-horizontal" class="text-muted cursor-pointer" style="width: 20px;"></i>
+        </div>
+      </div>
+      <div class="text-muted smaller fw-bold text-uppercase letter-spacing-1 mb-1">Total Étudiants</div>
+      <div class="h2 fw-extrabold mb-1">{{ stats.total_students }}</div>
+      <div class="smaller text-success fw-semibold d-flex align-items-center gap-1">
+        <i data-lucide="trending-up" style="width: 14px;"></i>
+        <span>{{ stats.scope_label }}</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-12 col-sm-6 col-xl-3">
+    <div class="card border-0 shadow-sm p-4 hover-premium h-100">
+      <div class="d-flex align-items-center justify-content-between mb-3">
+        <div class="bg-success-soft p-3 rounded-4">
+          <i data-lucide="award" style="width: 24px; height: 24px;"></i>
+        </div>
+      </div>
+      <div class="text-muted smaller fw-bold text-uppercase letter-spacing-1 mb-1">Admissions</div>
+      <div class="h2 fw-extrabold mb-1">{{ stats.accepted_students }}</div>
+      <div class="smaller text-muted fw-medium">Dossiers acceptés</div>
+    </div>
+  </div>
+
+  <div class="col-12 col-sm-6 col-xl-3">
+    <div class="card border-0 shadow-sm p-4 hover-premium h-100">
+      <div class="d-flex align-items-center justify-content-between mb-3">
+        <div class="bg-info-soft p-3 rounded-4">
+          <i data-lucide="banknote" style="width: 24px; height: 24px;"></i>
+        </div>
+      </div>
+      <div class="text-muted smaller fw-bold text-uppercase letter-spacing-1 mb-1">Recettes Mois</div>
+      <div class="h2 fw-extrabold mb-1 text-truncate">{{ "{:,.0f}".format(stats.revenue_month).replace(',', ' ') }}
+        <span class="h6 text-muted fw-normal">FCFA</span>
+      </div>
+      <div class="smaller text-muted fw-medium">Enregistrés ce mois</div>
+    </div>
+  </div>
+
+  <div class="col-12 col-sm-6 col-xl-3">
+    <div class="card border-0 shadow-sm p-4 hover-premium h-100">
+      <div class="d-flex align-items-center justify-content-between mb-3">
+        <div class="{% if stats.overdue_tasks > 0 %}bg-danger-soft{% else %}bg-light{% endif %} p-3 rounded-4">
+          <i data-lucide="clock" style="width: 24px; height: 24px;"></i>
+        </div>
+      </div>
+      <div class="text-muted smaller fw-bold text-uppercase letter-spacing-1 mb-1">Tâches en retard</div>
+      <div class="h2 fw-extrabold mb-1 {% if stats.overdue_tasks > 0 %}text-danger{% endif %}">{{ stats.overdue_tasks }}
+      </div>
+      <div class="smaller text-muted fw-medium">Relances urgentes</div>
+    </div>
+  </div>
 </div>
 
-<div class="row g-3">
-  <div class="col-12 col-md-4">
-    <div class="card">
-      <div class="card-body">
-        <div class="text-muted">Étudiants</div>
-        <div class="display-6">{{ stats.total_students }}</div>
+<div class="row g-4 mb-5">
+  <!-- Revenue Chart -->
+  <div class="col-12 col-lg-8">
+    <div class="card border-0 shadow-sm p-4 h-100 animate-in" style="animation-delay: 0.1s;">
+      <div class="d-flex justify-content-between align-items-center mb-5">
+        <div>
+          <h5 class="fw-bold mb-1">Évolution des Recettes</h5>
+          <p class="text-muted extra-small mb-0">Performance financière sur les 6 derniers mois</p>
+        </div>
+        <div class="badge bg-light text-dark fw-bold px-3 py-2 rounded-pill border">Semestriel</div>
+      </div>
+      <div class="chart-container" style="height: 300px;">
+        <canvas id="revenueChart" data-labels='{{ stats.revenue_labels|tojson }}'
+          data-values='{{ stats.revenue_data|tojson }}'></canvas>
       </div>
     </div>
   </div>
-  <div class="col-12 col-md-4">
-    <div class="card">
-      <div class="card-body">
-        <div class="text-muted">Acceptés</div>
-        <div class="display-6">{{ stats.accepted_students }}</div>
+
+  <!-- Distribution Chart & Ranking -->
+  <div class="col-12 col-lg-4">
+    <div class="card border-0 shadow-sm p-4 h-100 animate-in" style="animation-delay: 0.2s;">
+      <h5 class="fw-bold mb-4">Répartition Statuts</h5>
+      <div class="chart-container mb-4" style="position: relative; height: 200px;">
+        <canvas id="statusChart" data-labels='{{ stats.students_by_status_labels|tojson }}'
+          data-values='{{ stats.students_by_status_data|tojson }}'></canvas>
       </div>
+
+      {% if stats.agent_ranking %}
+      <div class="mt-auto">
+        <h6 class="fw-bold mb-3 smaller text-uppercase letter-spacing-1 opacity-50">Classement Agents</h6>
+        <div class="agent-ranking-list">
+          {% for a in stats.agent_ranking %}
+          <div
+            class="d-flex align-items-center justify-content-between p-2 rounded-3 mb-1 hover-bg-light transition-all">
+            <div class="d-flex align-items-center gap-3">
+              <div
+                class="avatar-xs bg-primary text-white rounded-circle d-flex align-items-center justify-content-center fw-bold"
+                style="width: 24px; height: 24px; font-size: 0.65rem;">
+                {{ a.agent_name[:1] }}
+              </div>
+              <span class="smaller fw-bold text-dark">{{ a.agent_name }}</span>
+            </div>
+            <span class="badge bg-primary-soft text-primary rounded-pill smaller fw-bold">{{ a.total }} docs</span>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
     </div>
   </div>
-  <div class="col-12 col-md-4">
-    <div class="card">
-      <div class="card-body">
-        <div class="text-muted">Revenus (mois)</div>
-        <div class="display-6">-</div>
+</div>
+
+<!-- Quick Actions -->
+<div class="row g-4 animate-in mb-5" style="animation-delay: 0.3s;">
+  <div class="col-12">
+    <div class="card border-0 shadow-sm p-4 bg-dark overflow-hidden position-relative rounded-4">
+      <!-- Decoration -->
+      <div class="position-absolute top-0 end-0 p-5 opacity-10">
+        <i data-lucide="zap" style="width: 120px; height: 120px; color: white;"></i>
+      </div>
+
+      <h5 class="fw-bold mb-4 text-white position-relative">Actions Rapides</h5>
+      <div class="d-flex flex-wrap gap-3 position-relative">
+        <a href="/students/new"
+          class="quick-action-btn bg-white text-dark p-3 rounded-4 border-0 d-flex flex-column align-items-start gap-2 shadow-sm">
+          <div class="bg-primary-soft p-2 rounded-3 text-primary"><i data-lucide="user-plus" style="width: 20px;"></i>
+          </div>
+          <span class="smaller fw-bold mt-1">Nouvelle Inscription</span>
+        </a>
+        <a href="/prospects"
+          class="quick-action-btn bg-white text-dark p-3 rounded-4 border-0 d-flex flex-column align-items-start gap-2 shadow-sm">
+          <div class="bg-info-soft p-2 rounded-3 text-info"><i data-lucide="target" style="width: 20px;"></i></div>
+          <span class="smaller fw-bold mt-1">Gérer Prospects</span>
+        </a>
+        <a href="/payments"
+          class="quick-action-btn bg-white text-dark p-3 rounded-4 border-0 d-flex flex-column align-items-start gap-2 shadow-sm">
+          <div class="bg-success-soft p-2 rounded-3 text-success"><i data-lucide="credit-card" style="width: 20px;"></i>
+          </div>
+          <span class="smaller fw-bold mt-1">Nouveau Paiement</span>
+        </a>
+        <a href="/activity/daily"
+          class="quick-action-btn bg-white text-dark p-3 rounded-4 border-0 d-flex flex-column align-items-start gap-2 shadow-sm">
+          <div class="bg-warning-soft p-2 rounded-3 text-warning"><i data-lucide="clipboard-list"
+              style="width: 20px;"></i></div>
+          <span class="smaller fw-bold mt-1">Rapport Activité</span>
+        </a>
       </div>
     </div>
   </div>
 </div>
+
+{% if stats.recent_reports %}
+<!-- Admin Intelligence: Recent Reports -->
+<div class="row g-4 animate-in" style="animation-delay: 0.4s;">
+  <div class="col-12">
+    <div class="card border-0 shadow-premium p-4">
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+          <h5 class="fw-bold mb-1">Rapports d'Activité Récents</h5>
+          <p class="text-muted extra-small mb-0">Dernières soumissions des agents commerciaux</p>
+        </div>
+        <a href="/activity/daily" class="btn btn-light-soft rounded-pill px-4 smaller fw-bold">Voir tout</a>
+      </div>
+
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="bg-light-soft">
+            <tr>
+              <th class="ps-4 py-3 text-muted extra-small text-uppercase fw-bold letter-spacing-1">Agent & Date</th>
+              <th class="py-3 text-muted extra-small text-uppercase fw-bold letter-spacing-1">Résumé de l'activité</th>
+              <th class="py-3 text-muted extra-small text-uppercase fw-bold letter-spacing-1 text-center">Prospects</th>
+              <th class="py-3 text-muted extra-small text-uppercase fw-bold letter-spacing-1 text-center">Paiements</th>
+              <th class="pe-4 py-3 text-end">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for r in stats.recent_reports %}
+            <tr class="transition-all">
+              <td class="ps-4 py-4">
+                <div class="d-flex align-items-center gap-3">
+                  <div
+                    class="avatar-xs bg-dark text-white rounded-circle d-flex align-items-center justify-content-center fw-bold"
+                    style="width: 32px; height: 32px;">{{ r.agent_name[:1] }}</div>
+                  <div>
+                    <div class="fw-bold text-dark smaller">{{ r.agent_name }}</div>
+                    <div class="extra-small text-muted">{{ r.report_date }}</div>
+                  </div>
+                </div>
+              </td>
+              <td class="py-4">
+                <p class="mb-0 smaller text-dark text-truncate" style="max-width: 400px;">{{ r.content }}</p>
+              </td>
+              <td class="py-4 text-center">
+                <span class="badge bg-info-soft text-info rounded-pill px-3">{{ r.prospects_met }}</span>
+              </td>
+              <td class="py-4 text-center">
+                <span class="badge bg-success-soft text-success rounded-pill px-3">{{ r.payments_collected }}</span>
+              </td>
+              <td class="pe-4 py-4 text-end">
+                <a href="/activity/daily" class="btn btn-sm btn-light rounded-circle">
+                  <i data-lucide="eye" style="width: 14px;"></i>
+                </a>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<style>
+  .fw-extrabold {
+    font-weight: 800;
+  }
+
+  .letter-spacing-1 {
+    letter-spacing: 1px;
+  }
+
+  .hover-bg-light:hover {
+    background-color: #f8fafc;
+  }
+
+  .quick-action-btn {
+    min-width: 180px;
+    text-decoration: none;
+    transition: all 0.2s ease;
+  }
+
+  .quick-action-btn:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px -5px rgba(0, 0, 0, 0.2) !important;
+  }
+</style>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+  window.addEventListener('DOMContentLoaded', () => {
+    // Custom Chart Defaults
+    Chart.defaults.font.family = "'Plus Jakarta Sans', sans-serif";
+    Chart.defaults.color = '#64748b';
+
+    // Revenue Chart - Line with Gradient
+    const ctxRev = document.getElementById('revenueChart');
+    if (ctxRev) {
+      const labelsRev = JSON.parse(ctxRev.dataset.labels);
+      const valuesRev = JSON.parse(ctxRev.dataset.values);
+
+      const gradient = ctxRev.getContext('2d').createLinearGradient(0, 0, 0, 300);
+      gradient.addColorStop(0, 'rgba(79, 70, 229, 0.15)');
+      gradient.addColorStop(1, 'rgba(79, 70, 229, 0)');
+
+      new Chart(ctxRev, {
+        type: 'line',
+        data: {
+          labels: labelsRev,
+          datasets: [{
+            label: 'Recettes',
+            data: valuesRev,
+            borderColor: '#4f46e5',
+            backgroundColor: gradient,
+            fill: true,
+            tension: 0.45,
+            borderWidth: 4,
+            pointRadius: 0,
+            pointHoverRadius: 6,
+            pointHoverBackgroundColor: '#4f46e5',
+            pointHoverBorderColor: '#fff',
+            pointHoverBorderWidth: 3
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { intersect: false, mode: 'index' },
+          plugins: { legend: { display: false }, tooltip: { padding: 12, cornerRadius: 10 } },
+          scales: {
+            y: {
+              beginAtZero: true,
+              grid: { color: 'rgba(226, 232, 240, 0.4)', drawBorder: false },
+              ticks: { padding: 10 }
+            },
+            x: {
+              grid: { display: false },
+              ticks: { padding: 10 }
+            }
+          }
+        }
+      });
+    }
+
+    // Status Chart - Donut
+    const ctxStat = document.getElementById('statusChart');
+    if (ctxStat) {
+      const labelsStat = JSON.parse(ctxStat.dataset.labels);
+      const valuesStat = JSON.parse(ctxStat.dataset.values);
+
+      new Chart(ctxStat, {
+        type: 'doughnut',
+        data: {
+          labels: labelsStat,
+          datasets: [{
+            data: valuesStat,
+            backgroundColor: [
+              '#4f46e5', '#10b981', '#0ea5e9', '#f59e0b', '#ef4444', '#6366f1'
+            ],
+            borderWidth: 0,
+            hoverOffset: 15,
+            weight: 0.5
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          cutout: '80%',
+          plugins: {
+            legend: { position: 'bottom', labels: { boxWidth: 8, usePointStyle: true, padding: 15, font: { size: 10, weight: '600' } } },
+            tooltip: { cornerRadius: 10, padding: 12 }
+          }
+        }
+      });
+    }
+  });
+</script>
 {% endblock %}

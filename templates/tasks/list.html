@@ -1,0 +1,164 @@
+{% extends "base.html" %}
+
+{% block page_title %}Gestion des Tâches{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12 d-flex justify-content-between align-items-center">
+        <div>
+            <h3 class="fw-bold mb-0">Tâches & Rappels</h3>
+            <p class="text-muted smaller mb-0">Suivez les relances et les actions critiques</p>
+        </div>
+        <button class="btn btn-primary d-flex align-items-center gap-2" data-bs-toggle="modal"
+            data-bs-target="#newTaskModal">
+            <i data-lucide="plus-circle" style="width: 18px;"></i>
+            Nouvelle Tâche
+        </button>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Task Filters Sidebar? No, let's keep it simple with tabs -->
+    <div class="col-12">
+        <div class="card shadow-sm border-0">
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="bg-light">
+                            <tr class="smaller text-muted text-uppercase fw-bold">
+                                <th class="ps-4 py-3">État</th>
+                                <th class="py-3">Tâche</th>
+                                <th class="py-3">Échéance</th>
+                                <th class="py-3">Assigné à</th>
+                                <th class="py-3">Priorité</th>
+                                <th class="pe-4 py-3 text-end">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for t in tasks %}
+                            <tr
+                                class="{% if t.status == 'completed' %}opacity-50 text-decoration-line-through{% endif %}">
+                                <td class="ps-4">
+                                    <form method="post" action="/tasks/{{ t.id }}/status">
+                                        <input type="hidden" name="status"
+                                            value="{% if t.status == 'completed' %}pending{% else %}completed{% endif %}">
+                                        <button type="submit" class="btn btn-sm btn-link p-0">
+                                            <i data-lucide="{% if t.status == 'completed' %}check-circle-2{% else %}circle{% endif %}"
+                                                class="{% if t.status == 'completed' %}text-success{% else %}text-muted{% endif %}"
+                                                style="width: 24px; height: 24px;"></i>
+                                        </button>
+                                    </form>
+                                </td>
+                                <td>
+                                    <div class="fw-bold text-dark">{{ t.title }}</div>
+                                    {% if t.student_name %}
+                                    <div class="smaller text-primary"><i data-lucide="user"
+                                            class="d-inline-block align-middle me-1" style="width: 12px;"></i> {{
+                                        t.student_name }}</div>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div
+                                        class="smaller {% if t.due_date and t.due_date < now_date and t.status != 'completed' %}text-danger fw-bold{% else %}text-muted{% endif %}">
+                                        <i data-lucide="calendar" class="d-inline-block align-middle me-1"
+                                            style="width: 14px;"></i>
+                                        {{ t.due_date or 'Pas d\'échéance' }}
+                                    </div>
+                                </td>
+                                <td><span class="smaller">{{ t.assigned_to_name or 'Non assigné' }}</span></td>
+                                <td>
+                                    <span
+                                        class="badge {% if t.priority == 'high' %}bg-danger-soft text-danger{% elif t.priority == 'medium' %}bg-warning-soft text-warning{% else %}bg-info-soft text-info{% endif %} rounded-pill px-3 py-1 smaller">
+                                        {{ t.priority|capitalize }}
+                                    </span>
+                                </td>
+                                <td class="pe-4 text-end">
+                                    <form method="post" action="/tasks/{{ t.id }}/delete"
+                                        onsubmit="return confirm('Supprimer cette tâche ?')">
+                                        <button type="submit" class="btn btn-sm btn-light rounded-circle">
+                                            <i data-lucide="trash-2" style="width: 16px;"></i>
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="6" class="text-center py-5">
+                                    <i data-lucide="clipboard-list" class="text-muted opacity-10 mb-3"
+                                        style="width: 64px; height: 64px;"></i>
+                                    <p class="text-muted">Aucune tâche active. Profitez-en !</p>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block modals %}
+<!-- New Task Modal -->
+<div class="modal fade" id="newTaskModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold">Nouvelle Tâche</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" action="/tasks/new">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Titre</label>
+                        <input type="text" name="title" class="form-control" required
+                            placeholder="Ce qu'il faut faire...">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Description</label>
+                        <textarea name="description" class="form-control" rows="2"></textarea>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-6">
+                            <label class="form-label">Échéance</label>
+                            <input type="date" name="due_date" class="form-control">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label">Priorité</label>
+                            <select name="priority" class="form-select">
+                                <option value="low">Basse</option>
+                                <option value="medium" selected>Moyenne</option>
+                                <option value="high">Haute</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Assigner à</label>
+                        <select name="assigned_to_user_id" class="form-select">
+                            <option value="">(Moi-même)</option>
+                            {% for u in users %}
+                            <option value="{{ u.id }}">{{ u.full_name }} ({{ u.role }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Lier à un étudiant (optionnel)</label>
+                        <select name="student_id" class="form-select">
+                            <option value="">Aucun</option>
+                            {% for s in students %}
+                            <option value="{{ s.id }}">{{ s.full_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer border-0">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-primary px-4">Créer</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,6 +1,169 @@
 {% extends "base.html" %}
 
+{% block page_title %}Rapport Journalier{% endblock %}
+
 {% block content %}
-<h1 class="h4">Rapports journaliers</h1>
-<p class="text-muted mb-0">Placeholder</p>
+<div class="row mb-4">
+    <div class="col-12 d-flex justify-content-between align-items-center">
+        <div>
+            <h3 class="fw-bold mb-0">Rapport d'Activité</h3>
+            <p class="text-muted smaller mb-0">Bilan des opérations du {{ report.date }}</p>
+        </div>
+        <form class="d-flex gap-2 align-items-center" method="get">
+            <input type="date" name="date" class="form-control form-control-sm" value="{{ current_date }}"
+                onchange="this.form.submit()">
+            <button type="button" class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-2"
+                onclick="window.print()">
+                <i data-lucide="printer" style="width: 16px;"></i>
+                Imprimer
+            </button>
+        </form>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Key Stats for the day -->
+    <div class="col-12">
+        <div class="row g-3">
+            <div class="col-md-4">
+                <div class="card shadow-sm border-0 border-start border-4 border-primary">
+                    <div class="card-body p-3">
+                        <div class="text-muted smaller fw-bold text-uppercase">Nouveaux Étudiants</div>
+                        <div class="h4 fw-bold mb-0">{{ report.students|length }}</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card shadow-sm border-0 border-start border-4 border-success">
+                    <div class="card-body p-3">
+                        <div class="text-muted smaller fw-bold text-uppercase">Recettes encaissées</div>
+                        <div class="h4 fw-bold mb-0 text-success">{{ "{:,.0f}".format(report.total_received or
+                            0).replace(',', ' ') }} <span class="small">FCFA</span></div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card shadow-sm border-0 border-start border-4 border-info">
+                    <div class="card-body p-3">
+                        <div class="text-muted smaller fw-bold text-uppercase">Mises à jour statuts</div>
+                        <div class="h4 fw-bold mb-0">{{ report.status_changes|length }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Detailed Tables -->
+    <div class="col-12 col-xl-6">
+        <div class="card shadow-sm border-0 h-100">
+            <div class="card-header bg-transparent border-0 pt-4 px-4">
+                <h5 class="fw-bold mb-0">Nouveaux Inscrits</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="bg-light">
+                            <tr class="smaller text-muted text-uppercase fw-bold">
+                                <th class="ps-4 py-3">Candidat</th>
+                                <th class="py-3">Pays</th>
+                                <th class="pe-4 py-3 text-end">Agent</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for s in report.students %}
+                            <tr>
+                                <td class="ps-4 py-3">
+                                    <div class="fw-bold">{{ s.full_name }}</div>
+                                    <div class="text-muted smaller">{{ s.email }}</div>
+                                </td>
+                                <td class="py-3">{{ s.country }}</td>
+                                <td class="pe-4 py-3 text-end text-muted smaller">{{ s.agent_name }}</td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="3" class="text-center py-4 text-muted small">Aucun inscrit aujourd'hui</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12 col-xl-6">
+        <div class="card shadow-sm border-0 h-100">
+            <div class="card-header bg-transparent border-0 pt-4 px-4">
+                <h5 class="fw-bold mb-0">Encaissements</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="bg-light">
+                            <tr class="smaller text-muted text-uppercase fw-bold">
+                                <th class="ps-4 py-3">Étudiant</th>
+                                <th class="py-3">Type</th>
+                                <th class="pe-4 py-3 text-end">Montant</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for p in report.payments %}
+                            <tr>
+                                <td class="ps-4 py-3">
+                                    <div class="fw-bold text-dark">{{ p.student_name }}</div>
+                                </td>
+                                <td class="py-3"><span class="smaller">{{ p.payment_type }}</span></td>
+                                <td class="pe-4 py-3 text-end fw-bold text-success">{{
+                                    "{:,.0f}".format(p.amount).replace(',', ' ') }}</td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="3" class="text-center py-4 text-muted small">Aucun paiement aujourd'hui
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-transparent border-0 pt-4 px-4">
+                <h5 class="fw-bold mb-0">Évolution des Dossiers</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="bg-light">
+                            <tr class="smaller text-muted text-uppercase fw-bold">
+                                <th class="ps-4 py-3">Heure</th>
+                                <th class="py-3">Étudiant</th>
+                                <th class="py-3">Ancien État</th>
+                                <th class="py-3 text-primary">Nouvel État</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for h in report.status_changes %}
+                            <tr>
+                                <td class="ps-4 py-3 text-muted small">{{ h.changed_at[11:16] }}</td>
+                                <td class="py-3 fw-bold">{{ h.student_name }}</td>
+                                <td class="py-3 text-muted">{{ h.from_name or 'N/A' }}</td>
+                                <td class="py-3 fw-bold text-primary">{{ h.to_name }}</td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="4" class="text-center py-4 text-muted small">Aucun changement de statut
+                                    enregistré</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}
