@@ -1,6 +1,7 @@
 from fastapi import Depends, HTTPException, Request
 from app.db import get_db
 from app.data.users import get_user_by_id
+from pymongo.errors import PyMongoError
 
 
 def db_dep():
@@ -12,7 +13,10 @@ async def get_current_user(request: Request, db=Depends(db_dep)):
     if not user_id:
         raise HTTPException(status_code=401, detail="Not authenticated")
 
-    user = await get_user_by_id(db, user_id)
+    try:
+        user = await get_user_by_id(db, user_id)
+    except PyMongoError:
+        raise HTTPException(status_code=503, detail="Database unavailable")
     if not user:
         request.session.clear()
         raise HTTPException(status_code=401, detail="Not authenticated")
@@ -22,7 +26,10 @@ async def get_current_user(request: Request, db=Depends(db_dep)):
         raise HTTPException(status_code=401, detail="Not authenticated")
     
     from app.data.notifications import count_unread
-    user["unread_notifications"] = await count_unread(db, user["id"])
+    try:
+        user["unread_notifications"] = await count_unread(db, user.get("id") or str(user.get("_id")))
+    except PyMongoError:
+        user["unread_notifications"] = 0
     
     return user
 
