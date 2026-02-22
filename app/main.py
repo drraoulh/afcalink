@@ -24,8 +24,10 @@ def create_app() -> FastAPI:
         # Skip ping for Atlas M0 free tier (ReplicaSetNoPrimary on startup)
         # if settings.db_backend != "sqlite":
         #     await ping_mongo()
-        # Skip bootstrap admin on startup for Atlas; will be created lazily on first login if needed
-        # await ensure_bootstrap_admin(db)
+        try:
+            await ensure_bootstrap_admin(db)
+        except Exception:
+            pass
 
     @app.on_event("shutdown")
     async def _shutdown():
